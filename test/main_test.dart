@@ -1070,4 +1070,286 @@ void main() {
       expect(rsiDowntrend.last!.isOversold(), isTrue);
     });
   });
+
+  group('PipeList with KlineSeries tests', () {
+    test('calculate rate of change using pipe', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 104),
+        Kline.fromDouble(open: 104, high: 110, low: 103, close: 108),
+        Kline.fromDouble(open: 108, high: 112, low: 107, close: 110),
+        Kline.fromDouble(open: 110, high: 115, low: 109, close: 112),
+      ];
+
+      // prevを使って前のKlineとの変動率を計算
+      final rateOfChange = klines.pipe<double?>((wrapper) {
+        final prev = wrapper.prev;
+        if (prev == null) {
+          return null;
+        }
+        final currentClose = wrapper.body.close.toDouble();
+        final prevClose = prev.body.close.toDouble();
+        return (currentClose - prevClose) / prevClose * 100;
+      });
+
+      // 最初の要素はnull（前の要素がないため）
+      expect(rateOfChange[0], isNull);
+
+      // 2番目: (104 - 102) / 102 * 100 = 1.96%
+      expect(rateOfChange[1], closeTo(1.96, 0.01));
+
+      // 3番目: (108 - 104) / 104 * 100 = 3.85%
+      expect(rateOfChange[2], closeTo(3.85, 0.01));
+
+      // 4番目: (110 - 108) / 108 * 100 = 1.85%
+      expect(rateOfChange[3], closeTo(1.85, 0.01));
+
+      // 5番目: (112 - 110) / 110 * 100 = 1.82%
+      expect(rateOfChange[4], closeTo(1.82, 0.01));
+    });
+
+    test('calculate rate of change using cleanPipe (null excluded)', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 104),
+        Kline.fromDouble(open: 104, high: 110, low: 103, close: 108),
+        Kline.fromDouble(open: 108, high: 112, low: 107, close: 110),
+        Kline.fromDouble(open: 110, high: 115, low: 109, close: 112),
+      ];
+
+      // cleanPipeを使うとnullが自動的に除外される
+      final rateOfChange = klines.cleanPipe<double?>((wrapper) {
+        final prev = wrapper.prev;
+        if (prev == null) {
+          return null;
+        }
+        final currentClose = wrapper.body.close.toDouble();
+        final prevClose = prev.body.close.toDouble();
+        return (currentClose - prevClose) / prevClose * 100;
+      });
+
+      // nullは除外されるので、長さは4（最初のnullが除外される）
+      expect(rateOfChange.length, equals(4));
+
+      // 1番目: (104 - 102) / 102 * 100 = 1.96%
+      expect(rateOfChange[0], closeTo(1.96, 0.01));
+
+      // 2番目: (108 - 104) / 104 * 100 = 3.85%
+      expect(rateOfChange[1], closeTo(3.85, 0.01));
+
+      // 3番目: (110 - 108) / 108 * 100 = 1.85%
+      expect(rateOfChange[2], closeTo(1.85, 0.01));
+
+      // 4番目: (112 - 110) / 110 * 100 = 1.82%
+      expect(rateOfChange[3], closeTo(1.82, 0.01));
+    });
+
+    test('calculate rate of change with negative values', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 104),
+        Kline.fromDouble(open: 104, high: 108, low: 101, close: 102),
+        Kline.fromDouble(open: 102, high: 106, low: 98, close: 100),
+        Kline.fromDouble(open: 100, high: 104, low: 96, close: 105),
+      ];
+
+      final rateOfChange = klines.pipe<double?>((wrapper) {
+        final prev = wrapper.prev;
+        if (prev == null) {
+          return null;
+        }
+        final currentClose = wrapper.body.close.toDouble();
+        final prevClose = prev.body.close.toDouble();
+        return (currentClose - prevClose) / prevClose * 100;
+      });
+
+      expect(rateOfChange[0], isNull);
+
+      // 2番目: (102 - 104) / 104 * 100 = -1.92%（下落）
+      expect(rateOfChange[1], closeTo(-1.92, 0.01));
+
+      // 3番目: (100 - 102) / 102 * 100 = -1.96%（下落）
+      expect(rateOfChange[2], closeTo(-1.96, 0.01));
+
+      // 4番目: (105 - 100) / 100 * 100 = 5.00%（上昇）
+      expect(rateOfChange[3], closeTo(5.00, 0.01));
+    });
+
+    test('calculate average of current and next close using PipeList', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 104),
+        Kline.fromDouble(open: 104, high: 110, low: 103, close: 106),
+        Kline.fromDouble(open: 106, high: 112, low: 105, close: 108),
+      ];
+
+      // nextを使って現在と次の終値の平均を計算
+      final averages = klines.pipe<double?>((wrapper) {
+        final next = wrapper.next;
+        if (next == null) {
+          return null;
+        }
+        final currentClose = wrapper.body.close.toDouble();
+        final nextClose = next.body.close.toDouble();
+        return (currentClose + nextClose) / 2;
+      });
+
+      // 1番目: (102 + 104) / 2 = 103
+      expect(averages[0], closeTo(103.0, 0.01));
+
+      // 2番目: (104 + 106) / 2 = 105
+      expect(averages[1], closeTo(105.0, 0.01));
+
+      // 3番目: (106 + 108) / 2 = 107
+      expect(averages[2], closeTo(107.0, 0.01));
+
+      // 最後の要素はnull（次の要素がないため）
+      expect(averages[3], isNull);
+    });
+
+    test('calculate moving average using pipe with prev', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 100),
+        Kline.fromDouble(open: 100, high: 106, low: 98, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 100, close: 104),
+        Kline.fromDouble(open: 104, high: 110, low: 102, close: 106),
+        Kline.fromDouble(open: 106, high: 112, low: 104, close: 108),
+      ];
+
+      // prevとcurrentを使って2期間の移動平均を計算
+      final movingAvg = klines.pipe<double?>((wrapper) {
+        final prev = wrapper.prev;
+        if (prev == null) {
+          return null;
+        }
+        final currentClose = wrapper.body.close.toDouble();
+        final prevClose = prev.body.close.toDouble();
+        return (currentClose + prevClose) / 2;
+      });
+
+      expect(movingAvg[0], isNull);
+      expect(movingAvg[1], closeTo(101.0, 0.01)); // (100 + 102) / 2
+      expect(movingAvg[2], closeTo(103.0, 0.01)); // (102 + 104) / 2
+      expect(movingAvg[3], closeTo(105.0, 0.01)); // (104 + 106) / 2
+      expect(movingAvg[4], closeTo(107.0, 0.01)); // (106 + 108) / 2
+    });
+
+    test('calculate moving average using cleanPipe with prev', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 100),
+        Kline.fromDouble(open: 100, high: 106, low: 98, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 100, close: 104),
+        Kline.fromDouble(open: 104, high: 110, low: 102, close: 106),
+        Kline.fromDouble(open: 106, high: 112, low: 104, close: 108),
+      ];
+
+      // cleanPipeを使うとnullが除外される
+      final movingAvg = klines.cleanPipe<double?>((wrapper) {
+        final prev = wrapper.prev;
+        if (prev == null) {
+          return null;
+        }
+        final currentClose = wrapper.body.close.toDouble();
+        final prevClose = prev.body.close.toDouble();
+        return (currentClose + prevClose) / 2;
+      });
+
+      // nullが除外されるので長さは4
+      expect(movingAvg.length, equals(4));
+      expect(movingAvg[0], closeTo(101.0, 0.01)); // (100 + 102) / 2
+      expect(movingAvg[1], closeTo(103.0, 0.01)); // (102 + 104) / 2
+      expect(movingAvg[2], closeTo(105.0, 0.01)); // (104 + 106) / 2
+      expect(movingAvg[3], closeTo(107.0, 0.01)); // (106 + 108) / 2
+    });
+
+    test('cleanPipe with next filters out null from last element', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 104),
+        Kline.fromDouble(open: 104, high: 110, low: 103, close: 106),
+        Kline.fromDouble(open: 106, high: 112, low: 105, close: 108),
+      ];
+
+      // nextを使って現在と次の終値の平均を計算
+      final averages = klines.cleanPipe<double?>((wrapper) {
+        final next = wrapper.next;
+        if (next == null) {
+          return null;
+        }
+        final currentClose = wrapper.body.close.toDouble();
+        final nextClose = next.body.close.toDouble();
+        return (currentClose + nextClose) / 2;
+      });
+
+      // 最後の要素のnullが除外されるので長さは3
+      expect(averages.length, equals(3));
+      expect(averages[0], closeTo(103.0, 0.01)); // (102 + 104) / 2
+      expect(averages[1], closeTo(105.0, 0.01)); // (104 + 106) / 2
+      expect(averages[2], closeTo(107.0, 0.01)); // (106 + 108) / 2
+    });
+
+    test('cleanPipe with conditional filtering', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 104),
+        Kline.fromDouble(open: 104, high: 106, low: 103, close: 103), // 下落
+        Kline.fromDouble(open: 103, high: 110, low: 102, close: 108),
+        Kline.fromDouble(open: 108, high: 115, low: 107, close: 112),
+      ];
+
+      // 前の足から上昇した場合のみ変動率を返す
+      final uptrendRates = klines.cleanPipe<double?>((wrapper) {
+        final prev = wrapper.prev;
+        if (prev == null) {
+          return null;
+        }
+        final currentClose = wrapper.body.close.toDouble();
+        final prevClose = prev.body.close.toDouble();
+        final rateOfChange = (currentClose - prevClose) / prevClose * 100;
+
+        // 上昇した場合のみ返す（下落はnullを返して除外）
+        return rateOfChange > 0 ? rateOfChange : null;
+      });
+
+      // 上昇したのは3回（インデックス1, 3, 4）
+      expect(uptrendRates.length, equals(3));
+      expect(uptrendRates[0], closeTo(1.96, 0.01)); // (104-102)/102*100
+      expect(uptrendRates[1], closeTo(4.85, 0.01)); // (108-103)/103*100
+      expect(uptrendRates[2], closeTo(3.70, 0.01)); // (112-108)/108*100
+    });
+
+    test('cleanPipe vs pipe comparison', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 100),
+        Kline.fromDouble(open: 100, high: 106, low: 98, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 100, close: 104),
+      ];
+
+      // pipeはnullを含む
+      final withNull = klines.pipe<double?>((wrapper) {
+        final prev = wrapper.prev;
+        if (prev == null) {
+          return null;
+        }
+        return wrapper.body.close.toDouble();
+      });
+
+      // cleanPipeはnullを除外
+      final withoutNull = klines.cleanPipe<double?>((wrapper) {
+        final prev = wrapper.prev;
+        if (prev == null) {
+          return null;
+        }
+        return wrapper.body.close.toDouble();
+      });
+
+      expect(withNull.length, equals(3));
+      expect(withNull[0], isNull);
+      expect(withNull[1], equals(102.0));
+      expect(withNull[2], equals(104.0));
+
+      expect(withoutNull.length, equals(2));
+      expect(withoutNull[0], equals(102.0));
+      expect(withoutNull[1], equals(104.0));
+    });
+  });
 }

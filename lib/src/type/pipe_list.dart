@@ -25,6 +25,18 @@ class PipeWrapper<T> {
 }
 
 extension PipeList<T> on List<T> {
+  /// null除外
+  List<A> cleanPipe<A>(A Function(PipeWrapper<T>) func) {
+    final result = <A>[];
+    for (var i = 0; i < length; i++) {
+      final res = func(PipeWrapper(body: this[i], index: i, list: this));
+      if (res != null) {
+        result.add(res);
+      }
+    }
+    return result;
+  }
+
   List<A> pipe<A>(A Function(PipeWrapper<T>) func) {
     final result = <A>[];
     for (var i = 0; i < length; i++) {

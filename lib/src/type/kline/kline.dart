@@ -21,18 +21,21 @@ abstract class Kline with _$Kline {
     required double high,
     required double low,
     required double close,
+    int scale = 4,
   }) {
     return Kline(
-      open: Decimal.parse(open.toString()),
-      high: Decimal.parse(high.toString()),
-      low: Decimal.parse(low.toString()),
-      close: Decimal.parse(close.toString()),
+      open: Decimal.parse(open.toStringAsFixed(scale)),
+      high: Decimal.parse(high.toStringAsFixed(scale)),
+      low: Decimal.parse(low.toStringAsFixed(scale)),
+      close: Decimal.parse(close.toStringAsFixed(scale)),
     );
   }
 
   factory Kline.fromJson(Map<String, dynamic> json) => _$KlineFromJson(json);
 
   const Kline._();
+
+  bool check() => open <= high && open >= low && close <= high && close >= low;
 
   Decimal price(PriceType type) {
     switch (type) {
@@ -60,5 +63,26 @@ extension KlineSeriesX on KlineSeries {
   DecList get highs => map((e) => e.high).toList();
   DecList get lows => map((e) => e.low).toList();
   DecList get opens => map((e) => e.open).toList();
+
+  /// Use linear fit to predict the next kline.
+  Kline predictNext({int scale = 4}) {
+    if (length < 2) {
+      throw ArgumentError(
+        'KlineSeries must have at least 2 klines to predict next',
+      );
+    }
+    final closesFit = closes.linearFit().predict(closes.length.toDouble() + 1);
+    final highsFit = highs.linearFit().predict(highs.length.toDouble() + 1);
+    final lowsFit = lows.linearFit().predict(lows.length.toDouble() + 1);
+    final opensFit = opens.linearFit().predict(opens.length.toDouble() + 1);
+    return Kline.fromDouble(
+      open: opensFit,
+      high: highsFit,
+      low: lowsFit,
+      close: closesFit,
+      scale: scale,
+    );
+  }
+
   DecList prices(PriceType type) => map((e) => e.price(type)).toList();
 }

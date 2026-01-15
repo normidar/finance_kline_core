@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import 'package:finance_kline_core/finance_kline_core.dart';
+import 'package:finance_kline_core/src/type/merge_alignment.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'kline.freezed.dart';
@@ -90,6 +91,12 @@ extension KlineSeriesX on KlineSeries {
     required int period,
     PriceType priceType = PriceType.close,
   }) => prices(priceType).ema(period);
+
+  KlineSeries merge({
+    required int count,
+    required MergeAlignment alignment,
+    required MergeMode mode,
+  }) {}
 
   Kline mergeToKline() {
     return Kline(

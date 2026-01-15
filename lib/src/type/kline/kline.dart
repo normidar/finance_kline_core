@@ -91,6 +91,15 @@ extension KlineSeriesX on KlineSeries {
     PriceType priceType = PriceType.close,
   }) => prices(priceType).ema(period);
 
+  Kline mergeToKline() {
+    return Kline(
+      open: opens.first,
+      high: highs.reduce((a, b) => a > b ? a : b),
+      low: lows.reduce((a, b) => a < b ? a : b),
+      close: closes.last,
+    );
+  }
+
   /// Use linear fit to predict the next kline.
   Kline predictNext({int scale = 4}) {
     if (length < 2) {

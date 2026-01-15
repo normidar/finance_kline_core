@@ -18,6 +18,7 @@ void main() {
 
       expect(result.slope, closeTo(2.0, 0.0001));
       expect(result.intercept, closeTo(1.0, 0.0001));
+      expect(result.rSquared, closeTo(1.0, 0.0001)); // 完全な線形関係なのでR²=1
 
       // 予測値のテスト
       expect(result.predict(0), closeTo(1.0, 0.0001));
@@ -37,6 +38,7 @@ void main() {
 
       expect(result.slope, closeTo(0.0, 0.0001));
       expect(result.intercept, closeTo(5.0, 0.0001));
+      expect(result.rSquared, closeTo(1.0, 0.0001)); // すべて同じ値なのでR²=1
     });
 
     test('negative slope (y = -1.5x + 10)', () {
@@ -53,6 +55,7 @@ void main() {
 
       expect(result.slope, closeTo(-1.5, 0.0001));
       expect(result.intercept, closeTo(10.0, 0.0001));
+      expect(result.rSquared, closeTo(1.0, 0.0001)); // 完全な線形関係なのでR²=1
     });
 
     test('data with noise', () {
@@ -70,6 +73,9 @@ void main() {
       // ノイズがあるため、完全には一致しないが近い値になる
       expect(result.slope, closeTo(3.0, 0.2));
       expect(result.intercept, closeTo(2.0, 0.5));
+      // ノイズがあるためR²は1より小さいが、高い相関がある
+      expect(result.rSquared, greaterThan(0.99));
+      expect(result.rSquared, lessThanOrEqualTo(1.0));
     });
 
     test('two data points', () {
@@ -83,6 +89,7 @@ void main() {
       // (0,1) と (1,4) を通る直線: y = 3x + 1
       expect(result.slope, closeTo(3.0, 0.0001));
       expect(result.intercept, closeTo(1.0, 0.0001));
+      expect(result.rSquared, closeTo(1.0, 0.0001)); // 2点なので完全にフィット
     });
 
     test('decimal values', () {
@@ -98,6 +105,45 @@ void main() {
       // おおよそ y = 1.2x + 1.5
       expect(result.slope, closeTo(1.2, 0.0001));
       expect(result.intercept, closeTo(1.5, 0.0001));
+      expect(result.rSquared, closeTo(1.0, 0.0001)); // 完全な線形関係
+    });
+
+    test('R² with poor correlation', () {
+      // ランダムに近いデータで相関が低い
+      final data = [
+        Decimal.parse('5'),
+        Decimal.parse('2'),
+        Decimal.parse('8'),
+        Decimal.parse('3'),
+        Decimal.parse('7'),
+        Decimal.parse('1'),
+      ];
+
+      final result = data.linearFit();
+
+      // 相関が低いためR²は低い値になる
+      expect(result.rSquared, lessThan(0.5));
+      expect(result.rSquared, greaterThanOrEqualTo(0.0));
+    });
+
+    test('R² calculation details', () {
+      // 具体的なR²の計算を検証
+      final data = [
+        Decimal.parse('1'),
+        Decimal.parse('2'),
+        Decimal.parse('1.3'),
+        Decimal.parse('3.75'),
+        Decimal.parse('2.25'),
+      ];
+
+      final result = data.linearFit();
+
+      // R²は0〜1の範囲内
+      expect(result.rSquared, greaterThanOrEqualTo(0.0));
+      expect(result.rSquared, lessThanOrEqualTo(1.0));
+
+      // このデータはある程度の相関がある
+      expect(result.rSquared, greaterThan(0.3));
     });
 
     test('throws error on empty list', () {

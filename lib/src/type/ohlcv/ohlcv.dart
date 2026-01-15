@@ -35,6 +35,8 @@ abstract class Ohlcv with _$Ohlcv {
         return volume;
     }
   }
+
+  Kline toKline() => Kline.fromOhlcv(this);
 }
 
 enum OhlcvType {
@@ -53,4 +55,6 @@ extension OhlcvSeriesX on OhlcvSeries {
   DecList get volumes => map((e) => e.volume).toList();
 
   DecList prices(OhlcvType type) => map((e) => e.price(type)).toList();
+
+  KlineSeries toKlineSeries() => map((e) => e.toKline()).toList();
 }

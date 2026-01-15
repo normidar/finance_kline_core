@@ -104,4 +104,17 @@ extension KlineSeriesX on KlineSeries {
   }
 
   DecList prices(PriceType type) => map((e) => e.price(type)).toList();
+
+  OhlcvSeries toOhlcvSeries({required DecList volume}) {
+    if (length != volume.length) {
+      throw ArgumentError(
+        'KlineSeries and volume list must have the same length',
+      );
+    }
+    final ohlcvSeries = <Ohlcv>[];
+    for (var i = 0; i < length; i++) {
+      ohlcvSeries.add(this[i].toOhlcv(volume: volume[i]));
+    }
+    return ohlcvSeries;
+  }
 }

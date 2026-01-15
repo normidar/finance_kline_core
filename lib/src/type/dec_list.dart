@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import 'package:finance_kline_core/src/type/macd/macd.dart';
+import 'package:finance_kline_core/src/type/rsi/rsi.dart';
 
 typedef DecList = List<Decimal>;
 
@@ -234,6 +235,72 @@ extension DecListX on DecList {
       } else {
         result.add(null);
       }
+    }
+
+    return result;
+  }
+
+  /// RSI（Relative Strength Index）を計算します
+  ///
+  /// [period] 期間を指定します（デフォルト: 14）
+  ///
+  /// RSIは0〜100の範囲で、価格の変動の強さを測定する指標です
+  /// 計算式:
+  /// 1. 各期間の価格変動を計算（gain = 上昇分, loss = 下降分）
+  /// 2. 平均上昇 = gain の指数移動平均
+  /// 3. 平均下降 = loss の指数移動平均
+  /// 4. RS = 平均上昇 / 平均下降
+  /// 5. RSI = 100 - (100 / (1 + RS))
+  ///
+  /// データが不足している最初の部分はnullで埋められます
+  RsiSeries rsi(int period) {
+    if (period <= 0) {
+      throw ArgumentError('Period must be greater than 0');
+    }
+    if (isEmpty || length < 2) {
+      return [];
+    }
+
+    final result = <Rsi?>[];
+    final gains = <double>[];
+    final losses = <double>[];
+
+    // 各期間の価格変動を計算
+    result.add(null); // 最初のデータポイントはnull
+    for (var i = 1; i < length; i++) {
+      final change = this[i].toDouble() - this[i - 1].toDouble();
+      gains.add(change > 0 ? change : 0);
+      losses.add(change < 0 ? -change : 0);
+    }
+
+    // 最初のperiod個はnullで埋める（最初の1つは既に追加済み）
+    for (var i = 1; i < period; i++) {
+      result.add(null);
+    }
+
+    // 最初の平均を計算（SMA）
+    double avgGain = 0;
+    double avgLoss = 0;
+    for (var i = 0; i < period; i++) {
+      avgGain += gains[i];
+      avgLoss += losses[i];
+    }
+    avgGain /= period;
+    avgLoss /= period;
+
+    // 最初のRSIを計算
+    double rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
+    double rsi = 100 - (100 / (1 + rs));
+    result.add(Rsi(value: rsi));
+
+    // 残りのRSIを計算（EMAを使用）
+    for (var i = period; i < gains.length; i++) {
+      avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
+      avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
+
+      rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
+      rsi = 100 - (100 / (1 + rs));
+      result.add(Rsi(value: rsi));
     }
 
     return result;

@@ -119,6 +119,15 @@ extension KlineSeriesX on KlineSeries {
 
   DecList prices(PriceType type) => map((e) => e.price(type)).toList();
 
+  /// RSI（Relative Strength Index）を計算します
+  ///
+  /// [period] 期間を指定します（デフォルト: 14）
+  /// [priceType] 価格タイプ（デフォルト: close）
+  RsiSeries rsi({
+    int period = 14,
+    PriceType priceType = PriceType.close,
+  }) => prices(priceType).rsi(period);
+
   OhlcvSeries toOhlcvSeries({required DecList volume}) {
     if (length != volume.length) {
       throw ArgumentError(

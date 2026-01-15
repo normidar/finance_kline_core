@@ -775,4 +775,299 @@ void main() {
       );
     });
   });
+
+  group('RSI tests', () {
+    test('RSI calculation with default period', () {
+      // テスト用の価格データ（上昇トレンド）
+      final data = List.generate(
+        30,
+        (i) => Decimal.parse((100 + i * 0.5).toString()),
+      );
+
+      final result = data.rsi(14);
+
+      // 最初の14個はnull
+      for (var i = 0; i < 14; i++) {
+        expect(result[i], isNull);
+      }
+
+      // 15番目以降は値が入る
+      expect(result[14], isNotNull);
+      expect(result[20], isNotNull);
+      expect(result[29], isNotNull);
+
+      // RSI値は0〜100の範囲内
+      for (var i = 14; i < result.length; i++) {
+        expect(result[i]!.value, greaterThanOrEqualTo(0));
+        expect(result[i]!.value, lessThanOrEqualTo(100));
+      }
+
+      // 上昇トレンドではRSIは高めになる傾向
+      expect(result.last!.value, greaterThan(50));
+    });
+
+    test('RSI calculation with custom period', () {
+      final data = List.generate(
+        30,
+        (i) => Decimal.parse((100 + i).toString()),
+      );
+
+      final result = data.rsi(10);
+
+      // 最初の10個はnull
+      for (var i = 0; i < 10; i++) {
+        expect(result[i], isNull);
+      }
+
+      // 11番目以降は値が入る
+      expect(result[10], isNotNull);
+      expect(result[20], isNotNull);
+
+      final rsi20 = result[20]!;
+      expect(rsi20.value, isA<double>());
+      expect(rsi20.value, greaterThanOrEqualTo(0));
+      expect(rsi20.value, lessThanOrEqualTo(100));
+    });
+
+    test('RSI with uptrend shows high values', () {
+      // 強い上昇トレンド
+      final uptrend = List.generate(
+        30,
+        (i) => Decimal.parse((100 + i * 2).toString()),
+      );
+
+      final result = uptrend.rsi(14);
+      final lastRsi = result.last!;
+
+      // 強い上昇トレンドではRSIは高い値になる
+      expect(lastRsi.value, greaterThan(70));
+      expect(lastRsi.isOverbought(), isTrue);
+      expect(lastRsi.isOversold(), isFalse);
+      expect(lastRsi.isNeutral(), isFalse);
+    });
+
+    test('RSI with downtrend shows low values', () {
+      // 強い下降トレンド
+      final downtrend = List.generate(
+        30,
+        (i) => Decimal.parse((200 - i * 2).toString()),
+      );
+
+      final result = downtrend.rsi(14);
+      final lastRsi = result.last!;
+
+      // 強い下降トレンドではRSIは低い値になる
+      expect(lastRsi.value, lessThan(30));
+      expect(lastRsi.isOversold(), isTrue);
+      expect(lastRsi.isOverbought(), isFalse);
+      expect(lastRsi.isNeutral(), isFalse);
+    });
+
+    test('RSI with sideways market shows neutral values', () {
+      // 横ばい相場（小さな上下動）
+      final sideways = [
+        Decimal.parse('100'),
+        Decimal.parse('101'),
+        Decimal.parse('100.5'),
+        Decimal.parse('101.5'),
+        Decimal.parse('100'),
+        Decimal.parse('101'),
+        Decimal.parse('100.5'),
+        Decimal.parse('101.5'),
+        Decimal.parse('100'),
+        Decimal.parse('101'),
+        Decimal.parse('100.5'),
+        Decimal.parse('101.5'),
+        Decimal.parse('100'),
+        Decimal.parse('101'),
+        Decimal.parse('100.5'),
+        Decimal.parse('101.5'),
+        Decimal.parse('100'),
+        Decimal.parse('101'),
+        Decimal.parse('100.5'),
+      ];
+
+      final result = sideways.rsi(14);
+      final lastRsi = result.last!;
+
+      // 横ばい相場ではRSIは中立的な値になる
+      expect(lastRsi.isNeutral(), isTrue);
+      expect(lastRsi.value, greaterThan(30));
+      expect(lastRsi.value, lessThan(70));
+    });
+
+    test('RSI custom thresholds', () {
+      final data = List.generate(
+        30,
+        (i) => Decimal.parse((100 + i).toString()),
+      );
+
+      final result = data.rsi(14);
+      final rsi = result[20]!;
+
+      // カスタム閾値でのテスト
+      // RSIが50未満の場合はoversoldと判定される（閾値50）
+      if (rsi.value < 50) {
+        expect(rsi.isOversold(50), isTrue);
+      } else {
+        expect(rsi.isOversold(50), isFalse);
+      }
+
+      // RSIが60以上の場合はoverboughtと判定される（閾値60）
+      if (rsi.value >= 60) {
+        expect(rsi.isOverbought(60), isTrue);
+      } else {
+        expect(rsi.isOverbought(60), isFalse);
+      }
+    });
+
+    test('RSI throws error on invalid period', () {
+      final data = [Decimal.fromInt(100), Decimal.fromInt(101)];
+
+      expect(
+        () => data.rsi(0),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      expect(
+        () => data.rsi(-1),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('RSI on empty list', () {
+      final data = <Decimal>[];
+      final result = data.rsi(14);
+
+      expect(result, isEmpty);
+    });
+
+    test('RSI on list with insufficient data', () {
+      final data = [Decimal.fromInt(100)];
+      final result = data.rsi(14);
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('KlineSeriesX RSI tests', () {
+    test('RSI calculation on kline series', () {
+      final klines = List.generate(
+        30,
+        (i) => Kline.fromDouble(
+          open: 100 + i.toDouble(),
+          high: 102 + i.toDouble(),
+          low: 99 + i.toDouble(),
+          close: 100 + i.toDouble(),
+        ),
+      );
+
+      final rsi = klines.rsi();
+
+      // 最初の14個はnull
+      for (var i = 0; i < 14; i++) {
+        expect(rsi[i], isNull);
+      }
+
+      // 15番目以降は値が入る
+      expect(rsi[14], isNotNull);
+      expect(rsi[20], isNotNull);
+
+      final rsi20 = rsi[20]!;
+      expect(rsi20.value, isA<double>());
+      expect(rsi20.value, greaterThanOrEqualTo(0));
+      expect(rsi20.value, lessThanOrEqualTo(100));
+    });
+
+    test('RSI with different price types', () {
+      // 変動パターンが異なるKlineデータを生成
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 98, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 100, close: 103),
+        Kline.fromDouble(open: 103, high: 106, low: 99, close: 101),
+        Kline.fromDouble(open: 101, high: 110, low: 100, close: 104),
+        Kline.fromDouble(open: 104, high: 107, low: 102, close: 105),
+        Kline.fromDouble(open: 105, high: 112, low: 103, close: 106),
+        Kline.fromDouble(open: 106, high: 109, low: 104, close: 107),
+        Kline.fromDouble(open: 107, high: 115, low: 105, close: 108),
+        Kline.fromDouble(open: 108, high: 111, low: 106, close: 109),
+        Kline.fromDouble(open: 109, high: 118, low: 107, close: 110),
+        Kline.fromDouble(open: 110, high: 113, low: 108, close: 111),
+        Kline.fromDouble(open: 111, high: 120, low: 109, close: 112),
+        Kline.fromDouble(open: 112, high: 115, low: 110, close: 113),
+        Kline.fromDouble(open: 113, high: 122, low: 111, close: 114),
+        Kline.fromDouble(open: 114, high: 117, low: 112, close: 115),
+        Kline.fromDouble(open: 115, high: 125, low: 113, close: 116),
+        Kline.fromDouble(open: 116, high: 119, low: 114, close: 117),
+        Kline.fromDouble(open: 117, high: 128, low: 115, close: 118),
+        Kline.fromDouble(open: 118, high: 121, low: 116, close: 119),
+        Kline.fromDouble(open: 119, high: 130, low: 117, close: 120),
+      ];
+
+      final rsiClose = klines.rsi();
+      final rsiHigh = klines.rsi(priceType: PriceType.high);
+
+      // 異なる価格タイプでは異なる結果になる
+      expect(rsiClose.last, isNotNull);
+      expect(rsiHigh.last, isNotNull);
+
+      // close と high は異なる変動パターンを持つため、RSI値も異なる
+      // ただし、両方とも上昇トレンドなので高い値になる
+      expect(rsiClose.last!.value, greaterThan(50));
+      expect(rsiHigh.last!.value, greaterThan(50));
+    });
+
+    test('RSI with custom period on klines', () {
+      final klines = List.generate(
+        30,
+        (i) => Kline.fromDouble(
+          open: 100 + i.toDouble(),
+          high: 102 + i.toDouble(),
+          low: 99 + i.toDouble(),
+          close: 100 + i.toDouble(),
+        ),
+      );
+
+      final rsi = klines.rsi(period: 10);
+
+      expect(rsi[10], isNotNull);
+      expect(rsi[20], isNotNull);
+
+      final rsi20 = rsi[20]!;
+      expect(rsi20.value, greaterThanOrEqualTo(0));
+      expect(rsi20.value, lessThanOrEqualTo(100));
+    });
+
+    test('RSI trend detection on klines', () {
+      // 上昇トレンドのKlineデータ
+      final uptrendKlines = List.generate(
+        30,
+        (i) => Kline.fromDouble(
+          open: 100 + i * 2.toDouble(),
+          high: 103 + i * 2.toDouble(),
+          low: 99 + i * 2.toDouble(),
+          close: 102 + i * 2.toDouble(),
+        ),
+      );
+
+      final rsiUptrend = uptrendKlines.rsi();
+      expect(rsiUptrend.last!.value, greaterThan(70));
+      expect(rsiUptrend.last!.isOverbought(), isTrue);
+
+      // 下降トレンドのKlineデータ
+      final downtrendKlines = List.generate(
+        30,
+        (i) => Kline.fromDouble(
+          open: 200 - i * 2.toDouble(),
+          high: 203 - i * 2.toDouble(),
+          low: 199 - i * 2.toDouble(),
+          close: 200 - i * 2.toDouble(),
+        ),
+      );
+
+      final rsiDowntrend = downtrendKlines.rsi();
+      expect(rsiDowntrend.last!.value, lessThan(30));
+      expect(rsiDowntrend.last!.isOversold(), isTrue);
+    });
+  });
 }

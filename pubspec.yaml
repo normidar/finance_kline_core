@@ -17,9 +17,9 @@ environment:
 name: finance_kline_core
 homepage: https://github.com/normidar/finance_kline_core
 topics:
-  - a
-  - b
-  - c
-  - d
-  - e
+  - finance
+  - kline
+  - ohlcv
+  - analysis
+  - data
 version: 0.0.1

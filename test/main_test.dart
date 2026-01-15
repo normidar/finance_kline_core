@@ -1,6 +1,5 @@
 import 'package:decimal/decimal.dart';
 import 'package:finance_kline_core/finance_kline_core.dart';
-import 'package:finance_kline_core/src/type/merge_alignment.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -320,8 +319,6 @@ void main() {
 
       final merged = klines.merge(
         count: 2,
-        alignment: MergeAlignment.left,
-        mode: MergeMode.strict,
       );
 
       expect(merged.length, equals(3));
@@ -357,7 +354,6 @@ void main() {
 
       final merged = klines.merge(
         count: 2,
-        alignment: MergeAlignment.left,
         mode: MergeMode.partial,
       );
 
@@ -380,8 +376,6 @@ void main() {
 
       final merged = klines.merge(
         count: 2,
-        alignment: MergeAlignment.left,
-        mode: MergeMode.strict,
       );
 
       expect(merged.length, equals(2)); // 余りは捨てられる
@@ -401,7 +395,6 @@ void main() {
       final merged = klines.merge(
         count: 2,
         alignment: MergeAlignment.right,
-        mode: MergeMode.strict,
       );
 
       expect(merged.length, equals(3));
@@ -411,33 +404,35 @@ void main() {
       expect(merged[2].close, equals(Decimal.parse('116.0')));
     });
 
-    test('merge with count=2, right alignment, partial mode with remainder',
-        () {
-      // 5つのKlineを右寄せでマージ、最初の1つが余り
-      final klines = [
-        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
-        Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
-        Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
-        Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
-        Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
-      ];
+    test(
+      'merge with count=2, right alignment, partial mode with remainder',
+      () {
+        // 5つのKlineを右寄せでマージ、最初の1つが余り
+        final klines = [
+          Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+          Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
+          Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
+          Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
+          Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
+        ];
 
-      final merged = klines.merge(
-        count: 2,
-        alignment: MergeAlignment.right,
-        mode: MergeMode.partial,
-      );
+        final merged = klines.merge(
+          count: 2,
+          alignment: MergeAlignment.right,
+          mode: MergeMode.partial,
+        );
 
-      expect(merged.length, equals(3)); // 1つの余り + 2つの完全なチャンク
+        expect(merged.length, equals(3)); // 1つの余り + 2つの完全なチャンク
 
-      // 最初のマージ結果は余りの1つだけ
-      expect(merged[0].open, equals(Decimal.parse('100.0')));
-      expect(merged[0].close, equals(Decimal.parse('102.0')));
+        // 最初のマージ結果は余りの1つだけ
+        expect(merged[0].open, equals(Decimal.parse('100.0')));
+        expect(merged[0].close, equals(Decimal.parse('102.0')));
 
-      // 2番目のマージ結果: [1, 2]
-      expect(merged[1].open, equals(Decimal.parse('102.0')));
-      expect(merged[1].close, equals(Decimal.parse('109.0')));
-    });
+        // 2番目のマージ結果: [1, 2]
+        expect(merged[1].open, equals(Decimal.parse('102.0')));
+        expect(merged[1].close, equals(Decimal.parse('109.0')));
+      },
+    );
 
     test('merge with count=2, right alignment, strict mode with remainder', () {
       // 5つのKlineを右寄せでマージ、最初の1つは捨てる
@@ -452,7 +447,6 @@ void main() {
       final merged = klines.merge(
         count: 2,
         alignment: MergeAlignment.right,
-        mode: MergeMode.strict,
       );
 
       expect(merged.length, equals(2)); // 余りは捨てられる
@@ -476,15 +470,16 @@ void main() {
 
       final merged = klines.merge(
         count: 3,
-        alignment: MergeAlignment.left,
-        mode: MergeMode.strict,
       );
 
       expect(merged.length, equals(3));
 
       // 最初のマージ結果: [0, 1, 2]
       expect(merged[0].open, equals(Decimal.parse('100.0')));
-      expect(merged[0].high, equals(Decimal.parse('107.0'))); // max(105, 106, 107)
+      expect(
+        merged[0].high,
+        equals(Decimal.parse('107.0')),
+      ); // max(105, 106, 107)
       expect(merged[0].low, equals(Decimal.parse('95.0'))); // min(95, 96, 97)
       expect(merged[0].close, equals(Decimal.parse('104.0')));
     });
@@ -497,8 +492,6 @@ void main() {
 
       final merged = klines.merge(
         count: 1,
-        alignment: MergeAlignment.left,
-        mode: MergeMode.strict,
       );
 
       expect(merged.length, equals(2));
@@ -511,8 +504,6 @@ void main() {
 
       final merged = klines.merge(
         count: 2,
-        alignment: MergeAlignment.left,
-        mode: MergeMode.strict,
       );
 
       expect(merged, isEmpty);
@@ -526,8 +517,6 @@ void main() {
       expect(
         () => klines.merge(
           count: 0,
-          alignment: MergeAlignment.left,
-          mode: MergeMode.strict,
         ),
         throwsA(isA<ArgumentError>()),
       );
@@ -535,8 +524,6 @@ void main() {
       expect(
         () => klines.merge(
           count: -1,
-          alignment: MergeAlignment.left,
-          mode: MergeMode.strict,
         ),
         throwsA(isA<ArgumentError>()),
       );
@@ -553,8 +540,6 @@ void main() {
 
       final oneHourKlines = thirtyMinKlines.merge(
         count: 2,
-        alignment: MergeAlignment.left,
-        mode: MergeMode.strict,
       );
 
       expect(oneHourKlines.length, equals(2));

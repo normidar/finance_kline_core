@@ -1,5 +1,4 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
-import 'package:finance_kline_core/src/type/merge_alignment.dart';
 
 typedef KlineSeries = List<Kline>;
 
@@ -16,6 +15,23 @@ extension KlineSeriesX on KlineSeries {
     required int period,
     PriceType priceType = PriceType.close,
   }) => prices(priceType).ema(period);
+
+  /// MACD（Moving Average Convergence Divergence）を計算します
+  ///
+  /// [fastPeriod] 短期EMAの期間（デフォルト: 12）
+  /// [slowPeriod] 長期EMAの期間（デフォルト: 26）
+  /// [signalPeriod] シグナルラインのEMA期間（デフォルト: 9）
+  /// [priceType] 価格タイプ（デフォルト: close）
+  MacdSeries macd({
+    int fastPeriod = 12,
+    int slowPeriod = 26,
+    int signalPeriod = 9,
+    PriceType priceType = PriceType.close,
+  }) => prices(priceType).macd(
+    fastPeriod: fastPeriod,
+    slowPeriod: slowPeriod,
+    signalPeriod: signalPeriod,
+  );
 
   KlineSeries merge({
     required int count,

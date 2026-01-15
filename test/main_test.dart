@@ -557,4 +557,222 @@ void main() {
       expect(oneHourKlines[1].close, equals(Decimal.parse('51000.0')));
     });
   });
+
+  group('MACD tests', () {
+    test('MACD calculation with default periods', () {
+      // 十分なデータを用意（最低でもslowPeriod + signalPeriod - 1必要）
+      final data = List.generate(
+        50,
+        (i) => Decimal.parse((100 + i * 0.5).toString()),
+      );
+
+      final result = data.macd();
+
+      // 最初の部分はnull（slowPeriod + signalPeriod - 2まで）
+      expect(result[0], isNull);
+      expect(result[10], isNull);
+      expect(result[20], isNull);
+      expect(result[30], isNull);
+
+      // 十分なデータがある位置では値が入る
+      expect(result[34], isNotNull);
+      expect(result[40], isNotNull);
+      expect(result[49], isNotNull);
+
+      // MACD値が正しく計算されていることを確認
+      final macd40 = result[40]!;
+      expect(macd40.macdLine, isA<double>());
+      expect(macd40.signalLine, isA<double>());
+      expect(macd40.histogram, isA<double>());
+
+      // ヒストグラム = MACDライン - シグナルライン
+      expect(
+        macd40.histogram,
+        closeTo(macd40.macdLine - macd40.signalLine, 0.0001),
+      );
+    });
+
+    test('MACD calculation with custom periods', () {
+      final data = List.generate(
+        40,
+        (i) => Decimal.parse((100 + i).toString()),
+      );
+
+      final result = data.macd(
+        fastPeriod: 5,
+        slowPeriod: 10,
+        signalPeriod: 3,
+      );
+
+      // slowPeriod(10) + signalPeriod(3) - 2 = 11番目まではnull
+      expect(result[0], isNull);
+      expect(result[10], isNull);
+
+      // 12番目以降は値が入る
+      expect(result[11], isNotNull);
+      expect(result[20], isNotNull);
+
+      final macd20 = result[20]!;
+      expect(macd20.macdLine, isA<double>());
+      expect(macd20.signalLine, isA<double>());
+      expect(macd20.histogram, isA<double>());
+    });
+
+    test('MACD bullish and bearish indicators', () {
+      // 上昇トレンドのデータ
+      final uptrend = List.generate(
+        50,
+        (i) => Decimal.parse((100 + i * 2).toString()),
+      );
+
+      final uptrendMacd = uptrend.macd();
+      final lastUptrend = uptrendMacd.last!;
+
+      // 上昇トレンドではMACDラインが正の値になる傾向
+      expect(lastUptrend.macdLine, greaterThan(0));
+
+      // 下降トレンドのデータ
+      final downtrend = List.generate(
+        50,
+        (i) => Decimal.parse((200 - i * 2).toString()),
+      );
+
+      final downtrendMacd = downtrend.macd();
+      final lastDowntrend = downtrendMacd.last!;
+
+      // 下降トレンドではMACDラインが負の値になる傾向
+      expect(lastDowntrend.macdLine, lessThan(0));
+    });
+
+    test('MACD isBullish and isBearish properties', () {
+      final data = List.generate(
+        50,
+        (i) => Decimal.parse((100 + i).toString()),
+      );
+
+      final result = data.macd();
+      final lastMacd = result.last!;
+
+      // MACDラインとシグナルラインの比較
+      if (lastMacd.macdLine > lastMacd.signalLine) {
+        expect(lastMacd.isBullish, isTrue);
+        expect(lastMacd.isBearish, isFalse);
+      } else if (lastMacd.macdLine < lastMacd.signalLine) {
+        expect(lastMacd.isBullish, isFalse);
+        expect(lastMacd.isBearish, isTrue);
+      }
+    });
+
+    test('MACD throws error on invalid periods', () {
+      final data = [Decimal.fromInt(100), Decimal.fromInt(101)];
+
+      expect(
+        () => data.macd(fastPeriod: 0),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      expect(
+        () => data.macd(slowPeriod: -1),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      expect(
+        () => data.macd(signalPeriod: 0),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      expect(
+        () => data.macd(fastPeriod: 20, slowPeriod: 10),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('MACD on empty list', () {
+      final data = <Decimal>[];
+      final result = data.macd();
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('KlineSeriesX MACD tests', () {
+    test('MACD calculation on kline series', () {
+      final klines = List.generate(
+        50,
+        (i) => Kline.fromDouble(
+          open: 100 + i.toDouble(),
+          high: 102 + i.toDouble(),
+          low: 99 + i.toDouble(),
+          close: 100 + i.toDouble(),
+        ),
+      );
+
+      final macd = klines.macd();
+
+      // 最初の部分はnull
+      expect(macd[0], isNull);
+      expect(macd[20], isNull);
+
+      // 十分なデータがある位置では値が入る
+      expect(macd[34], isNotNull);
+      expect(macd[40], isNotNull);
+
+      final macd40 = macd[40]!;
+      expect(macd40.macdLine, isA<double>());
+      expect(macd40.signalLine, isA<double>());
+      expect(macd40.histogram, isA<double>());
+    });
+
+    test('MACD with different price types', () {
+      final klines = List.generate(
+        50,
+        (i) => Kline.fromDouble(
+          open: 100 + i.toDouble(),
+          high: 110 + i.toDouble() * 1.5,
+          low: 95 + i.toDouble() * 0.5,
+          close: 102 + i.toDouble(),
+        ),
+      );
+
+      final macdClose = klines.macd();
+      final macdHigh = klines.macd(priceType: PriceType.high);
+
+      // 異なる価格タイプでは異なる結果になる
+      expect(macdClose.last, isNotNull);
+      expect(macdHigh.last, isNotNull);
+      
+      // highの方が大きい傾きを持つため、MACDラインも異なるはず
+      expect(
+        (macdClose.last!.macdLine - macdHigh.last!.macdLine).abs(),
+        greaterThan(0.01),
+      );
+    });
+
+    test('MACD with custom periods on klines', () {
+      final klines = List.generate(
+        40,
+        (i) => Kline.fromDouble(
+          open: 100 + i.toDouble(),
+          high: 102 + i.toDouble(),
+          low: 99 + i.toDouble(),
+          close: 100 + i.toDouble(),
+        ),
+      );
+
+      final macd = klines.macd(
+        fastPeriod: 5,
+        slowPeriod: 10,
+        signalPeriod: 3,
+      );
+
+      expect(macd[11], isNotNull);
+      expect(macd[20], isNotNull);
+
+      final macd20 = macd[20]!;
+      expect(
+        macd20.histogram,
+        closeTo(macd20.macdLine - macd20.signalLine, 0.0001),
+      );
+    });
+  });
 }

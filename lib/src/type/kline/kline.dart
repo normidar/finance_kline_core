@@ -1,5 +1,5 @@
 import 'package:decimal/decimal.dart';
-import 'package:finance_kline_core/src/type/dec_list.dart';
+import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'kline.freezed.dart';
@@ -33,6 +33,15 @@ abstract class Kline with _$Kline {
 
   factory Kline.fromJson(Map<String, dynamic> json) => _$KlineFromJson(json);
 
+  factory Kline.fromOhlcv(Ohlcv ohlcv) {
+    return Kline(
+      open: ohlcv.open,
+      high: ohlcv.high,
+      low: ohlcv.low,
+      close: ohlcv.close,
+    );
+  }
+
   const Kline._();
 
   bool check() => open <= high && open >= low && close <= high && close >= low;
@@ -48,6 +57,16 @@ abstract class Kline with _$Kline {
       case PriceType.close:
         return close;
     }
+  }
+
+  Ohlcv toOhlcv({required Decimal volume}) {
+    return Ohlcv(
+      open: open,
+      high: high,
+      low: low,
+      close: close,
+      volume: volume,
+    );
   }
 }
 

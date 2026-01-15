@@ -60,4 +60,36 @@ extension DecListX on DecList {
       intercept: intercept,
     );
   }
+
+  /// 単純移動平均（Simple Moving Average）を計算します
+  ///
+  /// [period] 期間を指定します
+  /// 各位置において、その位置を含む過去period個の値の平均を計算します
+  /// データが不足している最初の部分はnullで埋められます
+  List<double?> sma(int period) {
+    if (period <= 0) {
+      throw ArgumentError('Period must be greater than 0');
+    }
+    if (isEmpty) {
+      return [];
+    }
+
+    final result = <double?>[];
+
+    for (var i = 0; i < length; i++) {
+      if (i < period - 1) {
+        // データが不足している場合はnullを追加
+        result.add(null);
+      } else {
+        // period個の値の平均を計算
+        double sum = 0;
+        for (var j = 0; j < period; j++) {
+          sum += this[i - j].toDouble();
+        }
+        result.add(sum / period);
+      }
+    }
+
+    return result;
+  }
 }

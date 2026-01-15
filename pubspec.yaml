@@ -1,5 +1,6 @@
 ---
 dependencies:
+  decimal: ^3.2.4
   fpdart: ^1.2.0
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
@@ -12,7 +13,7 @@ dev_dependencies:
   test: ^1.24.0
   very_good_analysis: any
 environment:
-  sdk: ^3.0.0
+  sdk: ^3.8.0
 name: finance_kline_core
 homepage: https://github.com/normidar/finance_kline_core
 topics:

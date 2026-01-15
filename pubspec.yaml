@@ -3,7 +3,7 @@ dependencies:
   decimal: ^3.2.4
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
-description: "'A pkg in Coin Galaxy.'"
+description: "'A comprehensive Dart package for financial candlestick (K-line) data analysis with technical indicators, statistical analysis, and precision decimal calculations.'"
 dev_dependencies:
   auto_exporter: ^4.0.0
   build_runner: ^2.7.1
@@ -21,4 +21,4 @@ topics:
   - ohlcv
   - analysis
   - data
-version: 0.0.2
+version: 0.0.3

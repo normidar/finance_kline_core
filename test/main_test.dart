@@ -740,7 +740,7 @@ void main() {
       // 異なる価格タイプでは異なる結果になる
       expect(macdClose.last, isNotNull);
       expect(macdHigh.last, isNotNull);
-      
+
       // highの方が大きい傾きを持つため、MACDラインも異なるはず
       expect(
         (macdClose.last!.macdLine - macdHigh.last!.macdLine).abs(),

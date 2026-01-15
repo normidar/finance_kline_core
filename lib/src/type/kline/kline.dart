@@ -94,9 +94,58 @@ extension KlineSeriesX on KlineSeries {
 
   KlineSeries merge({
     required int count,
-    required MergeAlignment alignment,
-    required MergeMode mode,
-  }) {}
+    MergeAlignment alignment = MergeAlignment.left,
+    MergeMode mode = MergeMode.strict,
+  }) {
+    if (count <= 0) {
+      throw ArgumentError('Count must be greater than 0');
+    }
+    if (isEmpty) {
+      return [];
+    }
+    if (count == 1) {
+      return this;
+    }
+
+    final result = <Kline>[];
+
+    if (alignment == MergeAlignment.left) {
+      // 左寄せ（古いデータから）
+      for (var i = 0; i < length; i += count) {
+        final end = i + count;
+        if (end <= length) {
+          // 完全なチャンク
+          final chunk = sublist(i, end);
+          result.add(chunk.mergeToKline());
+        } else if (mode == MergeMode.partial && i < length) {
+          // 余りのチャンク（partialモードの場合のみ）
+          final chunk = sublist(i);
+          result.add(chunk.mergeToKline());
+        }
+      }
+    } else {
+      // 右寄せ（新しいデータから）
+      final remainder = length % count;
+      var startIndex = 0;
+
+      if (remainder > 0) {
+        if (mode == MergeMode.partial) {
+          // 余りのチャンクを最初に追加
+          final chunk = sublist(0, remainder);
+          result.add(chunk.mergeToKline());
+        }
+        startIndex = remainder;
+      }
+
+      // 完全なチャンクを処理
+      for (var i = startIndex; i < length; i += count) {
+        final chunk = sublist(i, i + count);
+        result.add(chunk.mergeToKline());
+      }
+    }
+
+    return result;
+  }
 
   Kline mergeToKline() {
     return Kline(

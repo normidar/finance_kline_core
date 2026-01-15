@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import 'package:finance_kline_core/finance_kline_core.dart';
+import 'package:finance_kline_core/src/type/merge_alignment.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -302,6 +303,273 @@ void main() {
       // 短期EMAの方が価格変動に敏感
       // 上昇トレンドでは短期EMAの方が大きくなる
       expect(ema5.last! > ema10.last!, isTrue);
+    });
+  });
+
+  group('KlineSeriesX merge tests', () {
+    test('merge with count=2, left alignment, strict mode', () {
+      // 6つの30分足を2つずつマージして3つの1時間足にする
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
+        Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
+        Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
+        Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
+        Kline.fromDouble(open: 113, high: 118, low: 112, close: 116),
+      ];
+
+      final merged = klines.merge(
+        count: 2,
+        alignment: MergeAlignment.left,
+        mode: MergeMode.strict,
+      );
+
+      expect(merged.length, equals(3));
+
+      // 最初のマージ結果: [0, 1]
+      expect(merged[0].open, equals(Decimal.parse('100.0')));
+      expect(merged[0].high, equals(Decimal.parse('108.0')));
+      expect(merged[0].low, equals(Decimal.parse('99.0')));
+      expect(merged[0].close, equals(Decimal.parse('107.0')));
+
+      // 2番目のマージ結果: [2, 3]
+      expect(merged[1].open, equals(Decimal.parse('107.0')));
+      expect(merged[1].high, equals(Decimal.parse('112.0')));
+      expect(merged[1].low, equals(Decimal.parse('106.0')));
+      expect(merged[1].close, equals(Decimal.parse('111.0')));
+
+      // 3番目のマージ結果: [4, 5]
+      expect(merged[2].open, equals(Decimal.parse('111.0')));
+      expect(merged[2].high, equals(Decimal.parse('118.0')));
+      expect(merged[2].low, equals(Decimal.parse('110.0')));
+      expect(merged[2].close, equals(Decimal.parse('116.0')));
+    });
+
+    test('merge with count=2, left alignment, partial mode with remainder', () {
+      // 5つのKlineを2つずつマージ、最後の1つは余り
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
+        Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
+        Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
+        Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
+      ];
+
+      final merged = klines.merge(
+        count: 2,
+        alignment: MergeAlignment.left,
+        mode: MergeMode.partial,
+      );
+
+      expect(merged.length, equals(3)); // 2つの完全なチャンク + 1つの余り
+
+      // 最後のマージ結果は余りの1つだけ
+      expect(merged[2].open, equals(Decimal.parse('111.0')));
+      expect(merged[2].close, equals(Decimal.parse('113.0')));
+    });
+
+    test('merge with count=2, left alignment, strict mode with remainder', () {
+      // 5つのKlineを2つずつマージ、最後の1つは捨てる
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
+        Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
+        Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
+        Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
+      ];
+
+      final merged = klines.merge(
+        count: 2,
+        alignment: MergeAlignment.left,
+        mode: MergeMode.strict,
+      );
+
+      expect(merged.length, equals(2)); // 余りは捨てられる
+    });
+
+    test('merge with count=2, right alignment, strict mode', () {
+      // 右寄せで6つのKlineをマージ
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
+        Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
+        Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
+        Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
+        Kline.fromDouble(open: 113, high: 118, low: 112, close: 116),
+      ];
+
+      final merged = klines.merge(
+        count: 2,
+        alignment: MergeAlignment.right,
+        mode: MergeMode.strict,
+      );
+
+      expect(merged.length, equals(3));
+
+      // 最後のマージ結果が最も重要（最新データ）
+      expect(merged[2].open, equals(Decimal.parse('111.0')));
+      expect(merged[2].close, equals(Decimal.parse('116.0')));
+    });
+
+    test('merge with count=2, right alignment, partial mode with remainder',
+        () {
+      // 5つのKlineを右寄せでマージ、最初の1つが余り
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
+        Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
+        Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
+        Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
+      ];
+
+      final merged = klines.merge(
+        count: 2,
+        alignment: MergeAlignment.right,
+        mode: MergeMode.partial,
+      );
+
+      expect(merged.length, equals(3)); // 1つの余り + 2つの完全なチャンク
+
+      // 最初のマージ結果は余りの1つだけ
+      expect(merged[0].open, equals(Decimal.parse('100.0')));
+      expect(merged[0].close, equals(Decimal.parse('102.0')));
+
+      // 2番目のマージ結果: [1, 2]
+      expect(merged[1].open, equals(Decimal.parse('102.0')));
+      expect(merged[1].close, equals(Decimal.parse('109.0')));
+    });
+
+    test('merge with count=2, right alignment, strict mode with remainder', () {
+      // 5つのKlineを右寄せでマージ、最初の1つは捨てる
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
+        Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
+        Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
+        Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
+      ];
+
+      final merged = klines.merge(
+        count: 2,
+        alignment: MergeAlignment.right,
+        mode: MergeMode.strict,
+      );
+
+      expect(merged.length, equals(2)); // 余りは捨てられる
+
+      // 最初のマージ結果: [1, 2]（0は捨てられた）
+      expect(merged[0].open, equals(Decimal.parse('102.0')));
+      expect(merged[0].close, equals(Decimal.parse('109.0')));
+    });
+
+    test('merge with count=3', () {
+      // 9つのKlineを3つずつマージ
+      final klines = List.generate(
+        9,
+        (i) => Kline.fromDouble(
+          open: 100 + i.toDouble(),
+          high: 105 + i.toDouble(),
+          low: 95 + i.toDouble(),
+          close: 102 + i.toDouble(),
+        ),
+      );
+
+      final merged = klines.merge(
+        count: 3,
+        alignment: MergeAlignment.left,
+        mode: MergeMode.strict,
+      );
+
+      expect(merged.length, equals(3));
+
+      // 最初のマージ結果: [0, 1, 2]
+      expect(merged[0].open, equals(Decimal.parse('100.0')));
+      expect(merged[0].high, equals(Decimal.parse('107.0'))); // max(105, 106, 107)
+      expect(merged[0].low, equals(Decimal.parse('95.0'))); // min(95, 96, 97)
+      expect(merged[0].close, equals(Decimal.parse('104.0')));
+    });
+
+    test('merge with count=1 returns same series', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+        Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
+      ];
+
+      final merged = klines.merge(
+        count: 1,
+        alignment: MergeAlignment.left,
+        mode: MergeMode.strict,
+      );
+
+      expect(merged.length, equals(2));
+      expect(merged[0], equals(klines[0]));
+      expect(merged[1], equals(klines[1]));
+    });
+
+    test('merge with empty list returns empty', () {
+      final klines = <Kline>[];
+
+      final merged = klines.merge(
+        count: 2,
+        alignment: MergeAlignment.left,
+        mode: MergeMode.strict,
+      );
+
+      expect(merged, isEmpty);
+    });
+
+    test('merge throws error on invalid count', () {
+      final klines = [
+        Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
+      ];
+
+      expect(
+        () => klines.merge(
+          count: 0,
+          alignment: MergeAlignment.left,
+          mode: MergeMode.strict,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      expect(
+        () => klines.merge(
+          count: -1,
+          alignment: MergeAlignment.left,
+          mode: MergeMode.strict,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('merge real scenario: 30m to 1h', () {
+      // 実際のシナリオ: 2つの30分足を1つの1時間足にマージ
+      final thirtyMinKlines = [
+        Kline.fromDouble(open: 50000, high: 50500, low: 49800, close: 50200),
+        Kline.fromDouble(open: 50200, high: 50800, low: 50000, close: 50600),
+        Kline.fromDouble(open: 50600, high: 51000, low: 50400, close: 50800),
+        Kline.fromDouble(open: 50800, high: 51200, low: 50600, close: 51000),
+      ];
+
+      final oneHourKlines = thirtyMinKlines.merge(
+        count: 2,
+        alignment: MergeAlignment.left,
+        mode: MergeMode.strict,
+      );
+
+      expect(oneHourKlines.length, equals(2));
+
+      // 最初の1時間足
+      expect(oneHourKlines[0].open, equals(Decimal.parse('50000.0')));
+      expect(oneHourKlines[0].high, equals(Decimal.parse('50800.0')));
+      expect(oneHourKlines[0].low, equals(Decimal.parse('49800.0')));
+      expect(oneHourKlines[0].close, equals(Decimal.parse('50600.0')));
+
+      // 2番目の1時間足
+      expect(oneHourKlines[1].open, equals(Decimal.parse('50600.0')));
+      expect(oneHourKlines[1].high, equals(Decimal.parse('51200.0')));
+      expect(oneHourKlines[1].low, equals(Decimal.parse('50400.0')));
+      expect(oneHourKlines[1].close, equals(Decimal.parse('51000.0')));
     });
   });
 }

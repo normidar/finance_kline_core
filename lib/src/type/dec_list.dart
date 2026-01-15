@@ -92,4 +92,45 @@ extension DecListX on DecList {
 
     return result;
   }
+
+  /// 指数移動平均（Exponential Moving Average）を計算します
+  ///
+  /// [period] 期間を指定します
+  /// 最初のEMA値はSMAで初期化され、その後は指数加重平均で計算されます
+  /// 計算式: EMA = (価格 - 前回のEMA) * 乗数 + 前回のEMA
+  /// 乗数 = 2 / (period + 1)
+  /// データが不足している最初の部分はnullで埋められます
+  List<double?> ema(int period) {
+    if (period <= 0) {
+      throw ArgumentError('Period must be greater than 0');
+    }
+    if (isEmpty) {
+      return [];
+    }
+
+    final result = <double?>[];
+    final multiplier = 2.0 / (period + 1);
+
+    for (var i = 0; i < length; i++) {
+      if (i < period - 1) {
+        // データが不足している場合はnullを追加
+        result.add(null);
+      } else if (i == period - 1) {
+        // 最初のEMAはSMAで初期化
+        double sum = 0;
+        for (var j = 0; j < period; j++) {
+          sum += this[i - j].toDouble();
+        }
+        result.add(sum / period);
+      } else {
+        // EMA = (価格 - 前回のEMA) * 乗数 + 前回のEMA
+        final previousEma = result[i - 1]!;
+        final currentPrice = this[i].toDouble();
+        final currentEma = (currentPrice - previousEma) * multiplier + previousEma;
+        result.add(currentEma);
+      }
+    }
+
+    return result;
+  }
 }

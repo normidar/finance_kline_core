@@ -1,5 +1,5 @@
 import 'package:decimal/decimal.dart';
-import 'package:finance_kline_core/src/type/dec_list.dart';
+import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -116,6 +116,146 @@ void main() {
         data.linearFit,
         throwsA(isA<ArgumentError>()),
       );
+    });
+  });
+
+  group('EMA tests', () {
+    test('EMA calculation with simple data', () {
+      final data = [
+        Decimal.fromInt(10),
+        Decimal.fromInt(11),
+        Decimal.fromInt(12),
+        Decimal.fromInt(13),
+        Decimal.fromInt(14),
+        Decimal.fromInt(15),
+      ];
+
+      final result = data.ema(3);
+
+      // 最初の2つはnull
+      expect(result[0], isNull);
+      expect(result[1], isNull);
+
+      // 3番目はSMA: (10 + 11 + 12) / 3 = 11
+      expect(result[2], closeTo(11.0, 0.0001));
+
+      // 4番目以降はEMA計算
+      // multiplier = 2 / (3 + 1) = 0.5
+      // EMA[3] = (13 - 11) * 0.5 + 11 = 12
+      expect(result[3], closeTo(12.0, 0.0001));
+
+      // EMA[4] = (14 - 12) * 0.5 + 12 = 13
+      expect(result[4], closeTo(13.0, 0.0001));
+
+      // EMA[5] = (15 - 13) * 0.5 + 13 = 14
+      expect(result[5], closeTo(14.0, 0.0001));
+    });
+
+    test('EMA with period 5', () {
+      final data = [
+        Decimal.parse('22.27'),
+        Decimal.parse('22.19'),
+        Decimal.parse('22.08'),
+        Decimal.parse('22.17'),
+        Decimal.parse('22.18'),
+        Decimal.parse('22.13'),
+        Decimal.parse('22.23'),
+        Decimal.parse('22.43'),
+        Decimal.parse('22.24'),
+        Decimal.parse('22.29'),
+      ];
+
+      final result = data.ema(5);
+
+      // 最初の4つはnull
+      for (var i = 0; i < 4; i++) {
+        expect(result[i], isNull);
+      }
+
+      // 5番目はSMA
+      const firstSma = (22.27 + 22.19 + 22.08 + 22.17 + 22.18) / 5;
+      expect(result[4], closeTo(firstSma, 0.01));
+
+      // 残りはEMAで計算される
+      expect(result[5], isNotNull);
+      expect(result[9], isNotNull);
+    });
+
+    test('EMA throws error on invalid period', () {
+      final data = [Decimal.fromInt(1), Decimal.fromInt(2)];
+
+      expect(
+        () => data.ema(0),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      expect(
+        () => data.ema(-1),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('EMA on empty list', () {
+      final data = <Decimal>[];
+      final result = data.ema(5);
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('KlineSeriesX EMA tests', () {
+    test('EMA calculation on kline series', () {
+      final klines = [
+        Kline.fromDouble(open: 10, high: 11, low: 9, close: 10.5),
+        Kline.fromDouble(open: 10.5, high: 12, low: 10, close: 11.5),
+        Kline.fromDouble(open: 11.5, high: 13, low: 11, close: 12.5),
+        Kline.fromDouble(open: 12.5, high: 14, low: 12, close: 13.5),
+        Kline.fromDouble(open: 13.5, high: 15, low: 13, close: 14.5),
+      ];
+
+      final ema3 = klines.ema(period: 3);
+
+      // 最初の2つはnull
+      expect(ema3[0], isNull);
+      expect(ema3[1], isNull);
+
+      // 3番目はSMA: (10.5 + 11.5 + 12.5) / 3 = 11.5
+      expect(ema3[2], closeTo(11.5, 0.0001));
+
+      // 4番目以降はEMA
+      expect(ema3[3], isNotNull);
+      expect(ema3[4], isNotNull);
+
+      // EMAは増加傾向にある
+      expect(ema3[3]! > ema3[2]!, isTrue);
+      expect(ema3[4]! > ema3[3]!, isTrue);
+    });
+
+    test('EMA with different periods', () {
+      final klines = List.generate(
+        20,
+        (i) => Kline.fromDouble(
+          open: 100 + i.toDouble(),
+          high: 102 + i.toDouble(),
+          low: 99 + i.toDouble(),
+          close: 100 + i.toDouble(),
+        ),
+      );
+
+      final ema5 = klines.ema(period: 5);
+      final ema10 = klines.ema(period: 10);
+
+      // EMA5は5番目から値が入る
+      expect(ema5[4], isNotNull);
+      expect(ema5[0], isNull);
+
+      // EMA10は10番目から値が入る
+      expect(ema10[9], isNotNull);
+      expect(ema10[0], isNull);
+
+      // 短期EMAの方が価格変動に敏感
+      // 上昇トレンドでは短期EMAの方が大きくなる
+      expect(ema5.last! > ema10.last!, isTrue);
     });
   });
 }

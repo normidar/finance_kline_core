@@ -83,6 +83,14 @@ extension KlineSeriesX on KlineSeries {
   DecList get lows => map((e) => e.low).toList();
   DecList get opens => map((e) => e.open).toList();
 
+  /// 終値の指数移動平均（EMA）を計算します
+  ///
+  /// [period] 期間を指定します
+  List<double?> ema({
+    required int period,
+    PriceType priceType = PriceType.close,
+  }) => prices(priceType).ema(period);
+
   /// Use linear fit to predict the next kline.
   Kline predictNext({int scale = 4}) {
     if (length < 2) {

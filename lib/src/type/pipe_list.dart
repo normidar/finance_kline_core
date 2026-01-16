@@ -9,23 +9,28 @@ class PipeWrapper<T> {
 
   final List<T> _list;
 
+  /// 次の要素
   PipeWrapper<T>? get next {
-    if (_index + 1 >= _list.length) {
-      return null;
-    }
-    return PipeWrapper(body: _list[_index + 1], index: _index + 1, list: _list);
+    return this[1];
   }
 
+  /// 前の要素
   PipeWrapper<T>? get prev {
-    if (_index - 1 < 0) {
+    return this[-1];
+  }
+
+  /// 相対的要素を取得する
+  PipeWrapper<T>? operator [](int index) {
+    final ind = _index + index;
+    if (ind < 0 || ind >= _list.length) {
       return null;
     }
-    return PipeWrapper(body: _list[_index - 1], index: _index - 1, list: _list);
+    return PipeWrapper(body: _list[ind], index: ind, list: _list);
   }
 }
 
 extension PipeList<T> on List<T> {
-  /// null除外
+  /// null除外のpipe
   List<A> cleanPipe<A>(A Function(PipeWrapper<T>) func) {
     final result = <A>[];
     for (var i = 0; i < length; i++) {

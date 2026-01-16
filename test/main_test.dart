@@ -1352,4 +1352,202 @@ void main() {
       expect(withoutNull[1], equals(104.0));
     });
   });
+
+  group('correlation tests', () {
+    test('perfect positive correlation (+1)', () {
+      // 例: [1, 2, 3, 3] と [3, 4, 5, 5]
+      // 一方が増えるともう一方も同じ割合で増える
+      final list1 = [
+        Decimal.fromInt(1),
+        Decimal.fromInt(2),
+        Decimal.fromInt(3),
+        Decimal.fromInt(3),
+      ];
+      final list2 = [
+        Decimal.fromInt(3),
+        Decimal.fromInt(4),
+        Decimal.fromInt(5),
+        Decimal.fromInt(5),
+      ];
+
+      final correlation = list1.correlation(list2);
+      expect(correlation, closeTo(1.0, 0.0001));
+    });
+
+    test('perfect positive correlation with alternating pattern (+1)', () {
+      // 例: [1, 3, 1, 3] と [5, 7, 5, 7]
+      // パターンが同じであれば完全な正の相関
+      final list1 = [
+        Decimal.fromInt(1),
+        Decimal.fromInt(3),
+        Decimal.fromInt(1),
+        Decimal.fromInt(3),
+      ];
+      final list2 = [
+        Decimal.fromInt(5),
+        Decimal.fromInt(7),
+        Decimal.fromInt(5),
+        Decimal.fromInt(7),
+      ];
+
+      final correlation = list1.correlation(list2);
+      expect(correlation, closeTo(1.0, 0.0001));
+    });
+
+    test('perfect negative correlation (-1)', () {
+      // 一方が増えるともう一方は減る
+      final list1 = [
+        Decimal.fromInt(1),
+        Decimal.fromInt(2),
+        Decimal.fromInt(3),
+        Decimal.fromInt(4),
+      ];
+      final list2 = [
+        Decimal.fromInt(4),
+        Decimal.fromInt(3),
+        Decimal.fromInt(2),
+        Decimal.fromInt(1),
+      ];
+
+      final correlation = list1.correlation(list2);
+      expect(correlation, closeTo(-1.0, 0.0001));
+    });
+
+    test('weak correlation', () {
+      // より相関の弱いパターン
+      final list1 = [
+        Decimal.fromInt(1),
+        Decimal.fromInt(5),
+        Decimal.fromInt(2),
+        Decimal.fromInt(6),
+        Decimal.fromInt(3),
+      ];
+      final list2 = [
+        Decimal.fromInt(3),
+        Decimal.fromInt(2),
+        Decimal.fromInt(4),
+        Decimal.fromInt(1),
+        Decimal.fromInt(5),
+      ];
+
+      final correlation = list1.correlation(list2);
+      // 相関が弱いことを確認（絶対値が1よりかなり小さい）
+      expect(correlation.abs(), lessThan(0.8));
+    });
+
+    test('strong positive correlation (not perfect)', () {
+      // おおよそ正の相関があるが完全ではない
+      final list1 = [
+        Decimal.fromInt(1),
+        Decimal.fromInt(2),
+        Decimal.fromInt(3),
+        Decimal.fromInt(4),
+        Decimal.fromInt(5),
+      ];
+      final list2 = [
+        Decimal.fromInt(2),
+        Decimal.fromInt(4),
+        Decimal.fromInt(5),
+        Decimal.fromInt(7),
+        Decimal.fromInt(10),
+      ];
+
+      final correlation = list1.correlation(list2);
+      expect(correlation, greaterThan(0.9));
+      expect(correlation, lessThanOrEqualTo(1.0));
+    });
+
+    test('decimal values correlation', () {
+      // 完全に線形な関係: y = 2x + 8
+      // x: 1.5, 2.5, 3.5, 4.5
+      // y: 11, 13, 15, 17
+      final list1 = [
+        Decimal.parse('1.5'),
+        Decimal.parse('2.5'),
+        Decimal.parse('3.5'),
+        Decimal.parse('4.5'),
+      ];
+      final list2 = [
+        Decimal.parse('11'),
+        Decimal.parse('13'),
+        Decimal.parse('15'),
+        Decimal.parse('17'),
+      ];
+
+      final correlation = list1.correlation(list2);
+      expect(correlation, closeTo(1.0, 0.0001));
+    });
+
+    test('throws on empty list', () {
+      final empty = <Decimal>[];
+      final other = [Decimal.fromInt(1), Decimal.fromInt(2)];
+
+      expect(
+        () => empty.correlation(other),
+        throwsArgumentError,
+      );
+    });
+
+    test('throws on different length lists', () {
+      final list1 = [Decimal.fromInt(1), Decimal.fromInt(2)];
+      final list2 = [
+        Decimal.fromInt(1),
+        Decimal.fromInt(2),
+        Decimal.fromInt(3),
+      ];
+
+      expect(
+        () => list1.correlation(list2),
+        throwsArgumentError,
+      );
+    });
+
+    test('throws on single element', () {
+      final list1 = [Decimal.fromInt(1)];
+      final list2 = [Decimal.fromInt(2)];
+
+      expect(
+        () => list1.correlation(list2),
+        throwsArgumentError,
+      );
+    });
+
+    test('throws on zero variance (all same values)', () {
+      final list1 = [
+        Decimal.fromInt(5),
+        Decimal.fromInt(5),
+        Decimal.fromInt(5),
+      ];
+      final list2 = [
+        Decimal.fromInt(1),
+        Decimal.fromInt(2),
+        Decimal.fromInt(3),
+      ];
+
+      expect(
+        () => list1.correlation(list2),
+        throwsStateError,
+      );
+    });
+
+    test('symmetry property (correlation(A, B) = correlation(B, A))', () {
+      final list1 = [
+        Decimal.fromInt(1),
+        Decimal.fromInt(2),
+        Decimal.fromInt(3),
+        Decimal.fromInt(4),
+      ];
+      final list2 = [
+        Decimal.fromInt(2),
+        Decimal.fromInt(4),
+        Decimal.fromInt(5),
+        Decimal.fromInt(7),
+      ];
+
+      final correlation1 = list1.correlation(list2);
+      final correlation2 = list2.correlation(list1);
+
+      expect(correlation1, closeTo(correlation2, 0.0001));
+    });
+  });
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:decimal/decimal.dart';
 import 'package:finance_kline_core/src/type/macd/macd.dart';
 import 'package:finance_kline_core/src/type/rsi/rsi.dart';
@@ -21,6 +23,74 @@ class LinearFitResult {
 }
 
 extension DecListX on DecList {
+  /// ピアソンの積率相関係数を計算します
+  ///
+  /// [other] 相関を計算する対象のDecList
+  ///
+  /// 相関係数は-1〜+1の範囲で、以下のような意味を持ちます：
+  /// - +1: 完全な正の相関（一方が増えるともう一方も増える）
+  /// - 0: 相関なし
+  /// - -1: 完全な負の相関（一方が増えるともう一方は減る）
+  ///
+  /// 2つのリストの長さは同じである必要があります
+  /// 空のリストまたは要素が1つ以下の場合は例外をスローします
+  /// すべての値が同じ場合（標準偏差が0）も例外をスローします
+  double correlation(DecList other) {
+    if (isEmpty) {
+      throw ArgumentError('Cannot calculate correlation on empty list');
+    }
+    if (length != other.length) {
+      throw ArgumentError(
+        'Lists must have the same length: $length != ${other.length}',
+      );
+    }
+    if (length == 1) {
+      throw ArgumentError(
+        'Cannot calculate correlation with only one data point',
+      );
+    }
+
+    final n = length;
+
+    // 平均値を計算
+    double sumX = 0;
+    double sumY = 0;
+    for (var i = 0; i < n; i++) {
+      sumX += this[i].toDouble();
+      sumY += other[i].toDouble();
+    }
+    final meanX = sumX / n;
+    final meanY = sumY / n;
+
+    // 共分散と標準偏差を計算
+    double covariance = 0;
+    double varianceX = 0;
+    double varianceY = 0;
+
+    for (var i = 0; i < n; i++) {
+      final deviationX = this[i].toDouble() - meanX;
+      final deviationY = other[i].toDouble() - meanY;
+
+      covariance += deviationX * deviationY;
+      varianceX += deviationX * deviationX;
+      varianceY += deviationY * deviationY;
+    }
+
+    // 標準偏差が0の場合（すべての値が同じ）は計算不可
+    if (varianceX == 0 || varianceY == 0) {
+      throw StateError(
+        'Cannot calculate correlation: one or both lists have zero variance',
+      );
+    }
+
+    // ピアソン相関係数 = 共分散 / (標準偏差X * 標準偏差Y)
+    final stdDevX = math.sqrt(varianceX.abs());
+    final stdDevY = math.sqrt(varianceY.abs());
+    final correlation = covariance / (stdDevX * stdDevY);
+
+    return correlation;
+  }
+
   /// 指数移動平均（Exponential Moving Average）を計算します
   ///
   /// [period] 期間を指定します
@@ -126,38 +196,6 @@ extension DecListX on DecList {
       intercept: intercept,
       rSquared: rSquared,
     );
-  }
-
-  /// 単純移動平均（Simple Moving Average）を計算します
-  ///
-  /// [period] 期間を指定します
-  /// 各位置において、その位置を含む過去period個の値の平均を計算します
-  /// データが不足している最初の部分はnullで埋められます
-  List<double?> sma(int period) {
-    if (period <= 0) {
-      throw ArgumentError('Period must be greater than 0');
-    }
-    if (isEmpty) {
-      return [];
-    }
-
-    final result = <double?>[];
-
-    for (var i = 0; i < length; i++) {
-      if (i < period - 1) {
-        // データが不足している場合はnullを追加
-        result.add(null);
-      } else {
-        // period個の値の平均を計算
-        double sum = 0;
-        for (var j = 0; j < period; j++) {
-          sum += this[i - j].toDouble();
-        }
-        result.add(sum / period);
-      }
-    }
-
-    return result;
   }
 
   /// MACD（Moving Average Convergence Divergence）を計算します
@@ -289,8 +327,8 @@ extension DecListX on DecList {
     avgLoss /= period;
 
     // 最初のRSIを計算
-    double rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
-    double rsi = 100 - (100 / (1 + rs));
+    var rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
+    var rsi = 100 - (100 / (1 + rs));
     result.add(Rsi(value: rsi));
 
     // 残りのRSIを計算（EMAを使用）
@@ -301,6 +339,38 @@ extension DecListX on DecList {
       rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
       rsi = 100 - (100 / (1 + rs));
       result.add(Rsi(value: rsi));
+    }
+
+    return result;
+  }
+
+  /// 単純移動平均（Simple Moving Average）を計算します
+  ///
+  /// [period] 期間を指定します
+  /// 各位置において、その位置を含む過去period個の値の平均を計算します
+  /// データが不足している最初の部分はnullで埋められます
+  List<double?> sma(int period) {
+    if (period <= 0) {
+      throw ArgumentError('Period must be greater than 0');
+    }
+    if (isEmpty) {
+      return [];
+    }
+
+    final result = <double?>[];
+
+    for (var i = 0; i < length; i++) {
+      if (i < period - 1) {
+        // データが不足している場合はnullを追加
+        result.add(null);
+      } else {
+        // period個の値の平均を計算
+        double sum = 0;
+        for (var j = 0; j < period; j++) {
+          sum += this[i - j].toDouble();
+        }
+        result.add(sum / period);
+      }
     }
 
     return result;

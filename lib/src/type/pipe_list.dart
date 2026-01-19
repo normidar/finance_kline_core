@@ -1,23 +1,27 @@
 class PipeWrapper<T> {
-  PipeWrapper({required this.body, required int index, required List<T> list})
+  PipeWrapper({required int index, required List<T> list})
     : _list = list,
       _index = index;
-
-  final T body;
 
   final int _index;
 
   final List<T> _list;
+
+  T get body => _list[_index];
 
   /// 次の要素
   PipeWrapper<T>? get next {
     return this[1];
   }
 
+  T? get nextBody => next?.body;
+
   /// 前の要素
   PipeWrapper<T>? get prev {
     return this[-1];
   }
+
+  T? get prevBody => prev?.body;
 
   /// 相対的要素を取得する
   PipeWrapper<T>? operator [](int index) {
@@ -25,7 +29,7 @@ class PipeWrapper<T> {
     if (ind < 0 || ind >= _list.length) {
       return null;
     }
-    return PipeWrapper(body: _list[ind], index: ind, list: _list);
+    return PipeWrapper(index: ind, list: _list);
   }
 
   /// 相対的なインデックスで要素のリスト（null除外）を取得する
@@ -49,6 +53,8 @@ class PipeWrapper<T> {
     }
     return result;
   }
+
+  T? getBody(int index) => this[index]?.body;
 }
 
 extension PipeList<T> on List<T> {
@@ -56,7 +62,7 @@ extension PipeList<T> on List<T> {
   List<A> cleanPipe<A>(A Function(PipeWrapper<T>) func) {
     final result = <A>[];
     for (var i = 0; i < length; i++) {
-      final res = func(PipeWrapper(body: this[i], index: i, list: this));
+      final res = func(PipeWrapper(index: i, list: this));
       if (res != null) {
         result.add(res);
       }
@@ -67,7 +73,7 @@ extension PipeList<T> on List<T> {
   List<A> pipe<A>(A Function(PipeWrapper<T>) func) {
     final result = <A>[];
     for (var i = 0; i < length; i++) {
-      result.add(func(PipeWrapper(body: this[i], index: i, list: this)));
+      result.add(func(PipeWrapper(index: i, list: this)));
     }
     return result;
   }

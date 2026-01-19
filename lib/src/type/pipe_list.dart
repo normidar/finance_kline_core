@@ -27,6 +27,28 @@ class PipeWrapper<T> {
     }
     return PipeWrapper(body: _list[ind], index: ind, list: _list);
   }
+
+  /// 相対的なインデックスで要素のリスト（null除外）を取得する
+  List<T> cleanCombo(int start, int end) {
+    final result = <T>[];
+    for (var i = start; i <= end; i++) {
+      final item = this[i];
+      if (item != null) {
+        result.add(item.body);
+      }
+    }
+    return result;
+  }
+
+  /// 相対的なインデックスで要素のリスト（null可能）を取得する
+  List<T?> combo(int start, int end) {
+    final result = <T?>[];
+    for (var i = start; i <= end; i++) {
+      final item = this[i];
+      result.add(item?.body);
+    }
+    return result;
+  }
 }
 
 extension PipeList<T> on List<T> {

@@ -12,6 +12,8 @@ _Ohlcv _$OhlcvFromJson(Map<String, dynamic> json) => _Ohlcv(
   low: Decimal.fromJson(json['low'] as String),
   close: Decimal.fromJson(json['close'] as String),
   volume: Decimal.fromJson(json['volume'] as String),
+  openTimestamp: (json['openTimestamp'] as num).toInt(),
+  closeTimestamp: (json['closeTimestamp'] as num).toInt(),
 );
 
 Map<String, dynamic> _$OhlcvToJson(_Ohlcv instance) => <String, dynamic>{
@@ -20,4 +22,6 @@ Map<String, dynamic> _$OhlcvToJson(_Ohlcv instance) => <String, dynamic>{
   'low': instance.low,
   'close': instance.close,
   'volume': instance.volume,
+  'openTimestamp': instance.openTimestamp,
+  'closeTimestamp': instance.closeTimestamp,
 };

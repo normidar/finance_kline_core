@@ -15,6 +15,8 @@ abstract class Ohlcv with _$Ohlcv {
     required Decimal low,
     required Decimal close,
     required Decimal volume,
+    required int openTimestamp,
+    required int closeTimestamp,
   }) = _Ohlcv;
 
   factory Ohlcv.fromJson(Map<String, dynamic> json) => _$OhlcvFromJson(json);

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Ohlcv {
 
- Decimal get open; Decimal get high; Decimal get low; Decimal get close; Decimal get volume;
+ Decimal get open; Decimal get high; Decimal get low; Decimal get close; Decimal get volume; int get openTimestamp; int get closeTimestamp;
 /// Create a copy of Ohlcv
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $OhlcvCopyWith<Ohlcv> get copyWith => _$OhlcvCopyWithImpl<Ohlcv>(this as Ohlcv, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Ohlcv&&(identical(other.open, open) || other.open == open)&&(identical(other.high, high) || other.high == high)&&(identical(other.low, low) || other.low == low)&&(identical(other.close, close) || other.close == close)&&(identical(other.volume, volume) || other.volume == volume));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Ohlcv&&(identical(other.open, open) || other.open == open)&&(identical(other.high, high) || other.high == high)&&(identical(other.low, low) || other.low == low)&&(identical(other.close, close) || other.close == close)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.openTimestamp, openTimestamp) || other.openTimestamp == openTimestamp)&&(identical(other.closeTimestamp, closeTimestamp) || other.closeTimestamp == closeTimestamp));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,open,high,low,close,volume);
+int get hashCode => Object.hash(runtimeType,open,high,low,close,volume,openTimestamp,closeTimestamp);
 
 @override
 String toString() {
-  return 'Ohlcv(open: $open, high: $high, low: $low, close: $close, volume: $volume)';
+  return 'Ohlcv(open: $open, high: $high, low: $low, close: $close, volume: $volume, openTimestamp: $openTimestamp, closeTimestamp: $closeTimestamp)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $OhlcvCopyWith<$Res>  {
   factory $OhlcvCopyWith(Ohlcv value, $Res Function(Ohlcv) _then) = _$OhlcvCopyWithImpl;
 @useResult
 $Res call({
- Decimal open, Decimal high, Decimal low, Decimal close, Decimal volume
+ Decimal open, Decimal high, Decimal low, Decimal close, Decimal volume, int openTimestamp, int closeTimestamp
 });
 
 
@@ -65,14 +65,16 @@ class _$OhlcvCopyWithImpl<$Res>
 
 /// Create a copy of Ohlcv
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? open = null,Object? high = null,Object? low = null,Object? close = null,Object? volume = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? open = null,Object? high = null,Object? low = null,Object? close = null,Object? volume = null,Object? openTimestamp = null,Object? closeTimestamp = null,}) {
   return _then(_self.copyWith(
 open: null == open ? _self.open : open // ignore: cast_nullable_to_non_nullable
 as Decimal,high: null == high ? _self.high : high // ignore: cast_nullable_to_non_nullable
 as Decimal,low: null == low ? _self.low : low // ignore: cast_nullable_to_non_nullable
 as Decimal,close: null == close ? _self.close : close // ignore: cast_nullable_to_non_nullable
 as Decimal,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
-as Decimal,
+as Decimal,openTimestamp: null == openTimestamp ? _self.openTimestamp : openTimestamp // ignore: cast_nullable_to_non_nullable
+as int,closeTimestamp: null == closeTimestamp ? _self.closeTimestamp : closeTimestamp // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
@@ -157,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Decimal open,  Decimal high,  Decimal low,  Decimal close,  Decimal volume)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Decimal open,  Decimal high,  Decimal low,  Decimal close,  Decimal volume,  int openTimestamp,  int closeTimestamp)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Ohlcv() when $default != null:
-return $default(_that.open,_that.high,_that.low,_that.close,_that.volume);case _:
+return $default(_that.open,_that.high,_that.low,_that.close,_that.volume,_that.openTimestamp,_that.closeTimestamp);case _:
   return orElse();
 
 }
@@ -178,10 +180,10 @@ return $default(_that.open,_that.high,_that.low,_that.close,_that.volume);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Decimal open,  Decimal high,  Decimal low,  Decimal close,  Decimal volume)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Decimal open,  Decimal high,  Decimal low,  Decimal close,  Decimal volume,  int openTimestamp,  int closeTimestamp)  $default,) {final _that = this;
 switch (_that) {
 case _Ohlcv():
-return $default(_that.open,_that.high,_that.low,_that.close,_that.volume);case _:
+return $default(_that.open,_that.high,_that.low,_that.close,_that.volume,_that.openTimestamp,_that.closeTimestamp);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +200,10 @@ return $default(_that.open,_that.high,_that.low,_that.close,_that.volume);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Decimal open,  Decimal high,  Decimal low,  Decimal close,  Decimal volume)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Decimal open,  Decimal high,  Decimal low,  Decimal close,  Decimal volume,  int openTimestamp,  int closeTimestamp)?  $default,) {final _that = this;
 switch (_that) {
 case _Ohlcv() when $default != null:
-return $default(_that.open,_that.high,_that.low,_that.close,_that.volume);case _:
+return $default(_that.open,_that.high,_that.low,_that.close,_that.volume,_that.openTimestamp,_that.closeTimestamp);case _:
   return null;
 
 }
@@ -213,7 +215,7 @@ return $default(_that.open,_that.high,_that.low,_that.close,_that.volume);case _
 @JsonSerializable()
 
 class _Ohlcv extends Ohlcv {
-   _Ohlcv({required this.open, required this.high, required this.low, required this.close, required this.volume}): super._();
+   _Ohlcv({required this.open, required this.high, required this.low, required this.close, required this.volume, required this.openTimestamp, required this.closeTimestamp}): super._();
   factory _Ohlcv.fromJson(Map<String, dynamic> json) => _$OhlcvFromJson(json);
 
 @override final  Decimal open;
@@ -221,6 +223,8 @@ class _Ohlcv extends Ohlcv {
 @override final  Decimal low;
 @override final  Decimal close;
 @override final  Decimal volume;
+@override final  int openTimestamp;
+@override final  int closeTimestamp;
 
 /// Create a copy of Ohlcv
 /// with the given fields replaced by the non-null parameter values.
@@ -235,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Ohlcv&&(identical(other.open, open) || other.open == open)&&(identical(other.high, high) || other.high == high)&&(identical(other.low, low) || other.low == low)&&(identical(other.close, close) || other.close == close)&&(identical(other.volume, volume) || other.volume == volume));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Ohlcv&&(identical(other.open, open) || other.open == open)&&(identical(other.high, high) || other.high == high)&&(identical(other.low, low) || other.low == low)&&(identical(other.close, close) || other.close == close)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.openTimestamp, openTimestamp) || other.openTimestamp == openTimestamp)&&(identical(other.closeTimestamp, closeTimestamp) || other.closeTimestamp == closeTimestamp));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,open,high,low,close,volume);
+int get hashCode => Object.hash(runtimeType,open,high,low,close,volume,openTimestamp,closeTimestamp);
 
 @override
 String toString() {
-  return 'Ohlcv(open: $open, high: $high, low: $low, close: $close, volume: $volume)';
+  return 'Ohlcv(open: $open, high: $high, low: $low, close: $close, volume: $volume, openTimestamp: $openTimestamp, closeTimestamp: $closeTimestamp)';
 }
 
 
@@ -255,7 +259,7 @@ abstract mixin class _$OhlcvCopyWith<$Res> implements $OhlcvCopyWith<$Res> {
   factory _$OhlcvCopyWith(_Ohlcv value, $Res Function(_Ohlcv) _then) = __$OhlcvCopyWithImpl;
 @override @useResult
 $Res call({
- Decimal open, Decimal high, Decimal low, Decimal close, Decimal volume
+ Decimal open, Decimal high, Decimal low, Decimal close, Decimal volume, int openTimestamp, int closeTimestamp
 });
 
 
@@ -272,14 +276,16 @@ class __$OhlcvCopyWithImpl<$Res>
 
 /// Create a copy of Ohlcv
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? open = null,Object? high = null,Object? low = null,Object? close = null,Object? volume = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? open = null,Object? high = null,Object? low = null,Object? close = null,Object? volume = null,Object? openTimestamp = null,Object? closeTimestamp = null,}) {
   return _then(_Ohlcv(
 open: null == open ? _self.open : open // ignore: cast_nullable_to_non_nullable
 as Decimal,high: null == high ? _self.high : high // ignore: cast_nullable_to_non_nullable
 as Decimal,low: null == low ? _self.low : low // ignore: cast_nullable_to_non_nullable
 as Decimal,close: null == close ? _self.close : close // ignore: cast_nullable_to_non_nullable
 as Decimal,volume: null == volume ? _self.volume : volume // ignore: cast_nullable_to_non_nullable
-as Decimal,
+as Decimal,openTimestamp: null == openTimestamp ? _self.openTimestamp : openTimestamp // ignore: cast_nullable_to_non_nullable
+as int,closeTimestamp: null == closeTimestamp ? _self.closeTimestamp : closeTimestamp // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

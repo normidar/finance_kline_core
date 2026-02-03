@@ -57,13 +57,19 @@ abstract class Kline with _$Kline {
     }
   }
 
-  Ohlcv toOhlcv({required Decimal volume}) {
+  Ohlcv toOhlcv({
+    required Decimal volume,
+    required int openTimestamp,
+    required int closeTimestamp,
+  }) {
     return Ohlcv(
       open: open,
       high: high,
       low: low,
       close: close,
       volume: volume,
+      openTimestamp: openTimestamp,
+      closeTimestamp: closeTimestamp,
     );
   }
 }

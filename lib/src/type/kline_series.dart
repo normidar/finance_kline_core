@@ -128,15 +128,27 @@ extension KlineSeriesX on KlineSeries {
     PriceType priceType = PriceType.close,
   }) => prices(priceType).rsi(period);
 
-  OhlcvSeries toOhlcvSeries({required DecList volume}) {
-    if (length != volume.length) {
+  OhlcvSeries toOhlcvSeries({
+    required DecList volume,
+    required List<int> openTimestamps,
+    required List<int> closeTimestamps,
+  }) {
+    if (length != volume.length ||
+        length != openTimestamps.length ||
+        length != closeTimestamps.length) {
       throw ArgumentError(
         'KlineSeries and volume list must have the same length',
       );
     }
     final ohlcvSeries = <Ohlcv>[];
     for (var i = 0; i < length; i++) {
-      ohlcvSeries.add(this[i].toOhlcv(volume: volume[i]));
+      ohlcvSeries.add(
+        this[i].toOhlcv(
+          volume: volume[i],
+          openTimestamp: openTimestamps[i],
+          closeTimestamp: closeTimestamps[i],
+        ),
+      );
     }
     return ohlcvSeries;
   }

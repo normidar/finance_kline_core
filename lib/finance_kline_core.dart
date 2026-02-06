@@ -1,8 +1,10 @@
 export 'package:finance_kline_core/src/type/dec_list.dart';
+export 'package:finance_kline_core/src/type/interval.dart';
 export 'package:finance_kline_core/src/type/kline/kline.dart';
 export 'package:finance_kline_core/src/type/kline_series.dart';
 export 'package:finance_kline_core/src/type/macd/macd.dart';
 export 'package:finance_kline_core/src/type/merge_alignment.dart';
 export 'package:finance_kline_core/src/type/ohlcv/ohlcv.dart';
+export 'package:finance_kline_core/src/type/ohlcv_series.dart';
 export 'package:finance_kline_core/src/type/pipe_list.dart';
 export 'package:finance_kline_core/src/type/rsi/rsi.dart';

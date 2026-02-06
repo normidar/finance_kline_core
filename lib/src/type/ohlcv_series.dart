@@ -1,15 +1,29 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
+import 'package:finance_kline_core/src/type/series.dart';
 
-typedef OhlcvSeries = List<Ohlcv>;
+class OhlcvSeries with Series {
+  final List<Ohlcv> data;
 
-extension OhlcvSeriesX on OhlcvSeries {
-  DecList get closes => map((e) => e.close).toList();
-  DecList get highs => map((e) => e.high).toList();
-  DecList get lows => map((e) => e.low).toList();
-  DecList get opens => map((e) => e.open).toList();
-  DecList get volumes => map((e) => e.volume).toList();
+  OhlcvSeries(this.data);
 
-  DecList prices(OhlcvType type) => map((e) => e.price(type)).toList();
+  @override
+  DecList get closes => data.map((e) => e.close).toList();
+  @override
+  DecList get highs => data.map((e) => e.high).toList();
+  bool get isEmpty => data.isEmpty;
 
-  KlineSeries toKlineSeries() => map((e) => e.toKline()).toList();
+  bool get isNotEmpty => data.isNotEmpty;
+  int get length => data.length;
+
+  @override
+  DecList get lows => data.map((e) => e.low).toList();
+
+  @override
+  DecList get opens => data.map((e) => e.open).toList();
+
+  DecList get volumes => data.map((e) => e.volume).toList();
+
+  Ohlcv operator [](int index) => data[index];
+
+  List<Ohlcv> sublist(int start, [int? end]) => data.sublist(start, end);
 }

@@ -259,7 +259,7 @@ void main() {
         Kline.fromDouble(open: 13.5, high: 15, low: 13, close: 14.5),
       ];
 
-      final ema3 = klines.ema(period: 3);
+      final ema3 = KlineSeries(klines).ema(period: 3);
 
       // 最初の2つはnull
       expect(ema3[0], isNull);
@@ -278,13 +278,15 @@ void main() {
     });
 
     test('EMA with different periods', () {
-      final klines = List.generate(
-        20,
-        (i) => Kline.fromDouble(
-          open: 100 + i.toDouble(),
-          high: 102 + i.toDouble(),
-          low: 99 + i.toDouble(),
-          close: 100 + i.toDouble(),
+      final klines = KlineSeries(
+        List.generate(
+          20,
+          (i) => Kline.fromDouble(
+            open: 100 + i.toDouble(),
+            high: 102 + i.toDouble(),
+            low: 99 + i.toDouble(),
+            close: 100 + i.toDouble(),
+          ),
         ),
       );
 
@@ -308,14 +310,14 @@ void main() {
   group('KlineSeriesX merge tests', () {
     test('merge with count=2, left alignment, strict mode', () {
       // 6つの30分足を2つずつマージして3つの1時間足にする
-      final klines = [
+      final klines = KlineSeries([
         Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
         Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
         Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
         Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
         Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
         Kline.fromDouble(open: 113, high: 118, low: 112, close: 116),
-      ];
+      ]);
 
       final merged = klines.merge(
         count: 2,
@@ -344,13 +346,13 @@ void main() {
 
     test('merge with count=2, left alignment, partial mode with remainder', () {
       // 5つのKlineを2つずつマージ、最後の1つは余り
-      final klines = [
+      final klines = KlineSeries([
         Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
         Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
         Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
         Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
         Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
-      ];
+      ]);
 
       final merged = klines.merge(
         count: 2,
@@ -366,13 +368,13 @@ void main() {
 
     test('merge with count=2, left alignment, strict mode with remainder', () {
       // 5つのKlineを2つずつマージ、最後の1つは捨てる
-      final klines = [
+      final klines = KlineSeries([
         Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
         Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
         Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
         Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
         Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
-      ];
+      ]);
 
       final merged = klines.merge(
         count: 2,
@@ -383,14 +385,14 @@ void main() {
 
     test('merge with count=2, right alignment, strict mode', () {
       // 右寄せで6つのKlineをマージ
-      final klines = [
+      final klines = KlineSeries([
         Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
         Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
         Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
         Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
         Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
         Kline.fromDouble(open: 113, high: 118, low: 112, close: 116),
-      ];
+      ]);
 
       final merged = klines.merge(
         count: 2,
@@ -408,13 +410,13 @@ void main() {
       'merge with count=2, right alignment, partial mode with remainder',
       () {
         // 5つのKlineを右寄せでマージ、最初の1つが余り
-        final klines = [
+        final klines = KlineSeries([
           Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
           Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
           Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
           Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
           Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
-        ];
+        ]);
 
         final merged = klines.merge(
           count: 2,
@@ -436,13 +438,13 @@ void main() {
 
     test('merge with count=2, right alignment, strict mode with remainder', () {
       // 5つのKlineを右寄せでマージ、最初の1つは捨てる
-      final klines = [
+      final klines = KlineSeries([
         Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
         Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
         Kline.fromDouble(open: 107, high: 110, low: 106, close: 109),
         Kline.fromDouble(open: 109, high: 112, low: 108, close: 111),
         Kline.fromDouble(open: 111, high: 115, low: 110, close: 113),
-      ];
+      ]);
 
       final merged = klines.merge(
         count: 2,
@@ -458,13 +460,15 @@ void main() {
 
     test('merge with count=3', () {
       // 9つのKlineを3つずつマージ
-      final klines = List.generate(
-        9,
-        (i) => Kline.fromDouble(
-          open: 100 + i.toDouble(),
-          high: 105 + i.toDouble(),
-          low: 95 + i.toDouble(),
-          close: 102 + i.toDouble(),
+      final klines = KlineSeries(
+        List.generate(
+          9,
+          (i) => Kline.fromDouble(
+            open: 100 + i.toDouble(),
+            high: 105 + i.toDouble(),
+            low: 95 + i.toDouble(),
+            close: 102 + i.toDouble(),
+          ),
         ),
       );
 
@@ -485,10 +489,10 @@ void main() {
     });
 
     test('merge with count=1 returns same series', () {
-      final klines = [
+      final klines = KlineSeries([
         Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
         Kline.fromDouble(open: 102, high: 108, low: 101, close: 107),
-      ];
+      ]);
 
       final merged = klines.merge(
         count: 1,
@@ -500,7 +504,7 @@ void main() {
     });
 
     test('merge with empty list returns empty', () {
-      final klines = <Kline>[];
+      final klines = KlineSeries([]);
 
       final merged = klines.merge(
         count: 2,
@@ -510,9 +514,9 @@ void main() {
     });
 
     test('merge throws error on invalid count', () {
-      final klines = [
+      final klines = KlineSeries([
         Kline.fromDouble(open: 100, high: 105, low: 99, close: 102),
-      ];
+      ]);
 
       expect(
         () => klines.merge(
@@ -531,12 +535,12 @@ void main() {
 
     test('merge real scenario: 30m to 1h', () {
       // 実際のシナリオ: 2つの30分足を1つの1時間足にマージ
-      final thirtyMinKlines = [
+      final thirtyMinKlines = KlineSeries([
         Kline.fromDouble(open: 50000, high: 50500, low: 49800, close: 50200),
         Kline.fromDouble(open: 50200, high: 50800, low: 50000, close: 50600),
         Kline.fromDouble(open: 50600, high: 51000, low: 50400, close: 50800),
         Kline.fromDouble(open: 50800, high: 51200, low: 50600, close: 51000),
-      ];
+      ]);
 
       final oneHourKlines = thirtyMinKlines.merge(
         count: 2,
@@ -697,13 +701,15 @@ void main() {
 
   group('KlineSeriesX MACD tests', () {
     test('MACD calculation on kline series', () {
-      final klines = List.generate(
-        50,
-        (i) => Kline.fromDouble(
-          open: 100 + i.toDouble(),
-          high: 102 + i.toDouble(),
-          low: 99 + i.toDouble(),
-          close: 100 + i.toDouble(),
+      final klines = KlineSeries(
+        List.generate(
+          50,
+          (i) => Kline.fromDouble(
+            open: 100 + i.toDouble(),
+            high: 102 + i.toDouble(),
+            low: 99 + i.toDouble(),
+            close: 100 + i.toDouble(),
+          ),
         ),
       );
 
@@ -724,13 +730,15 @@ void main() {
     });
 
     test('MACD with different price types', () {
-      final klines = List.generate(
-        50,
-        (i) => Kline.fromDouble(
-          open: 100 + i.toDouble(),
-          high: 110 + i.toDouble() * 1.5,
-          low: 95 + i.toDouble() * 0.5,
-          close: 102 + i.toDouble(),
+      final klines = KlineSeries(
+        List.generate(
+          50,
+          (i) => Kline.fromDouble(
+            open: 100 + i.toDouble(),
+            high: 110 + i.toDouble() * 1.5,
+            low: 95 + i.toDouble() * 0.5,
+            close: 102 + i.toDouble(),
+          ),
         ),
       );
 
@@ -749,13 +757,15 @@ void main() {
     });
 
     test('MACD with custom periods on klines', () {
-      final klines = List.generate(
-        40,
-        (i) => Kline.fromDouble(
-          open: 100 + i.toDouble(),
-          high: 102 + i.toDouble(),
-          low: 99 + i.toDouble(),
-          close: 100 + i.toDouble(),
+      final klines = KlineSeries(
+        List.generate(
+          40,
+          (i) => Kline.fromDouble(
+            open: 100 + i.toDouble(),
+            high: 102 + i.toDouble(),
+            low: 99 + i.toDouble(),
+            close: 100 + i.toDouble(),
+          ),
         ),
       );
 
@@ -952,13 +962,15 @@ void main() {
 
   group('KlineSeriesX RSI tests', () {
     test('RSI calculation on kline series', () {
-      final klines = List.generate(
-        30,
-        (i) => Kline.fromDouble(
-          open: 100 + i.toDouble(),
-          high: 102 + i.toDouble(),
-          low: 99 + i.toDouble(),
-          close: 100 + i.toDouble(),
+      final klines = KlineSeries(
+        List.generate(
+          30,
+          (i) => Kline.fromDouble(
+            open: 100 + i.toDouble(),
+            high: 102 + i.toDouble(),
+            low: 99 + i.toDouble(),
+            close: 100 + i.toDouble(),
+          ),
         ),
       );
 
@@ -981,7 +993,7 @@ void main() {
 
     test('RSI with different price types', () {
       // 変動パターンが異なるKlineデータを生成
-      final klines = [
+      final klines = KlineSeries([
         Kline.fromDouble(open: 100, high: 105, low: 98, close: 102),
         Kline.fromDouble(open: 102, high: 108, low: 100, close: 103),
         Kline.fromDouble(open: 103, high: 106, low: 99, close: 101),
@@ -1002,7 +1014,7 @@ void main() {
         Kline.fromDouble(open: 117, high: 128, low: 115, close: 118),
         Kline.fromDouble(open: 118, high: 121, low: 116, close: 119),
         Kline.fromDouble(open: 119, high: 130, low: 117, close: 120),
-      ];
+      ]);
 
       final rsiClose = klines.rsi();
       final rsiHigh = klines.rsi(priceType: PriceType.high);
@@ -1018,13 +1030,15 @@ void main() {
     });
 
     test('RSI with custom period on klines', () {
-      final klines = List.generate(
-        30,
-        (i) => Kline.fromDouble(
-          open: 100 + i.toDouble(),
-          high: 102 + i.toDouble(),
-          low: 99 + i.toDouble(),
-          close: 100 + i.toDouble(),
+      final klines = KlineSeries(
+        List.generate(
+          30,
+          (i) => Kline.fromDouble(
+            open: 100 + i.toDouble(),
+            high: 102 + i.toDouble(),
+            low: 99 + i.toDouble(),
+            close: 100 + i.toDouble(),
+          ),
         ),
       );
 
@@ -1040,13 +1054,15 @@ void main() {
 
     test('RSI trend detection on klines', () {
       // 上昇トレンドのKlineデータ
-      final uptrendKlines = List.generate(
-        30,
-        (i) => Kline.fromDouble(
-          open: 100 + i * 2.toDouble(),
-          high: 103 + i * 2.toDouble(),
-          low: 99 + i * 2.toDouble(),
-          close: 102 + i * 2.toDouble(),
+      final uptrendKlines = KlineSeries(
+        List.generate(
+          30,
+          (i) => Kline.fromDouble(
+            open: 100 + i * 2.toDouble(),
+            high: 103 + i * 2.toDouble(),
+            low: 99 + i * 2.toDouble(),
+            close: 102 + i * 2.toDouble(),
+          ),
         ),
       );
 
@@ -1055,13 +1071,15 @@ void main() {
       expect(rsiUptrend.last!.isOverbought(), isTrue);
 
       // 下降トレンドのKlineデータ
-      final downtrendKlines = List.generate(
-        30,
-        (i) => Kline.fromDouble(
-          open: 200 - i * 2.toDouble(),
-          high: 203 - i * 2.toDouble(),
-          low: 199 - i * 2.toDouble(),
-          close: 200 - i * 2.toDouble(),
+      final downtrendKlines = KlineSeries(
+        List.generate(
+          30,
+          (i) => Kline.fromDouble(
+            open: 200 - i * 2.toDouble(),
+            high: 203 - i * 2.toDouble(),
+            low: 199 - i * 2.toDouble(),
+            close: 200 - i * 2.toDouble(),
+          ),
         ),
       );
 

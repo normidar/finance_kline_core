@@ -1,37 +1,27 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
+import 'package:finance_kline_core/src/type/series.dart';
 
-typedef KlineSeries = List<Kline>;
+class KlineSeries with Series {
+  final List<Kline> data;
 
-extension KlineSeriesX on KlineSeries {
-  DecList get closes => map((e) => e.close).toList();
-  DecList get highs => map((e) => e.high).toList();
-  DecList get lows => map((e) => e.low).toList();
-  DecList get opens => map((e) => e.open).toList();
+  KlineSeries(this.data);
 
-  /// 終値の指数移動平均（EMA）を計算します
-  ///
-  /// [period] 期間を指定します
-  List<double?> ema({
-    required int period,
-    PriceType priceType = PriceType.close,
-  }) => prices(priceType).ema(period);
+  @override
+  DecList get closes => data.map((e) => e.close).toList();
+  @override
+  DecList get highs => data.map((e) => e.high).toList();
+  bool get isEmpty => data.isEmpty;
 
-  /// MACD（Moving Average Convergence Divergence）を計算します
-  ///
-  /// [fastPeriod] 短期EMAの期間（デフォルト: 12）
-  /// [slowPeriod] 長期EMAの期間（デフォルト: 26）
-  /// [signalPeriod] シグナルラインのEMA期間（デフォルト: 9）
-  /// [priceType] 価格タイプ（デフォルト: close）
-  MacdSeries macd({
-    int fastPeriod = 12,
-    int slowPeriod = 26,
-    int signalPeriod = 9,
-    PriceType priceType = PriceType.close,
-  }) => prices(priceType).macd(
-    fastPeriod: fastPeriod,
-    slowPeriod: slowPeriod,
-    signalPeriod: signalPeriod,
-  );
+  bool get isNotEmpty => data.isNotEmpty;
+  int get length => data.length;
+
+  @override
+  DecList get lows => data.map((e) => e.low).toList();
+
+  @override
+  DecList get opens => data.map((e) => e.open).toList();
+
+  Kline operator [](int index) => data[index];
 
   KlineSeries merge({
     required int count,
@@ -42,7 +32,7 @@ extension KlineSeriesX on KlineSeries {
       throw ArgumentError('Count must be greater than 0');
     }
     if (isEmpty) {
-      return [];
+      return KlineSeries([]);
     }
     if (count == 1) {
       return this;
@@ -57,11 +47,11 @@ extension KlineSeriesX on KlineSeries {
         if (end <= length) {
           // 完全なチャンク
           final chunk = sublist(i, end);
-          result.add(chunk.mergeToKline());
+          result.add(_mergeChunkToKline(chunk));
         } else if (mode == MergeMode.partial && i < length) {
           // 余りのチャンク（partialモードの場合のみ）
           final chunk = sublist(i);
-          result.add(chunk.mergeToKline());
+          result.add(_mergeChunkToKline(chunk));
         }
       }
     } else {
@@ -73,7 +63,7 @@ extension KlineSeriesX on KlineSeries {
         if (mode == MergeMode.partial) {
           // 余りのチャンクを最初に追加
           final chunk = sublist(0, remainder);
-          result.add(chunk.mergeToKline());
+          result.add(_mergeChunkToKline(chunk));
         }
         startIndex = remainder;
       }
@@ -81,23 +71,15 @@ extension KlineSeriesX on KlineSeries {
       // 完全なチャンクを処理
       for (var i = startIndex; i < length; i += count) {
         final chunk = sublist(i, i + count);
-        result.add(chunk.mergeToKline());
+        result.add(_mergeChunkToKline(chunk));
       }
     }
 
-    return result;
-  }
-
-  Kline mergeToKline() {
-    return Kline(
-      open: opens.first,
-      high: highs.reduce((a, b) => a > b ? a : b),
-      low: lows.reduce((a, b) => a < b ? a : b),
-      close: closes.last,
-    );
+    return KlineSeries(result);
   }
 
   /// Use linear fit to predict the next kline.
+  /// [scale] は小数点以下の桁数を指定します。
   Kline predictNext({int scale = 4}) {
     if (length < 2) {
       throw ArgumentError(
@@ -117,39 +99,19 @@ extension KlineSeriesX on KlineSeries {
     );
   }
 
-  DecList prices(PriceType type) => map((e) => e.price(type)).toList();
+  List<Kline> sublist(int start, [int? end]) => data.sublist(start, end);
 
-  /// RSI（Relative Strength Index）を計算します
-  ///
-  /// [period] 期間を指定します（デフォルト: 14）
-  /// [priceType] 価格タイプ（デフォルト: close）
-  RsiSeries rsi({
-    int period = 14,
-    PriceType priceType = PriceType.close,
-  }) => prices(priceType).rsi(period);
+  Kline _mergeChunkToKline(List<Kline> chunk) {
+    final chunkOpens = chunk.map((e) => e.open).toList();
+    final chunkHighs = chunk.map((e) => e.high).toList();
+    final chunkLows = chunk.map((e) => e.low).toList();
+    final chunkCloses = chunk.map((e) => e.close).toList();
 
-  OhlcvSeries toOhlcvSeries({
-    required DecList volume,
-    required List<int> openTimestamps,
-    required List<int> closeTimestamps,
-  }) {
-    if (length != volume.length ||
-        length != openTimestamps.length ||
-        length != closeTimestamps.length) {
-      throw ArgumentError(
-        'KlineSeries and volume list must have the same length',
-      );
-    }
-    final ohlcvSeries = <Ohlcv>[];
-    for (var i = 0; i < length; i++) {
-      ohlcvSeries.add(
-        this[i].toOhlcv(
-          volume: volume[i],
-          openTimestamp: openTimestamps[i],
-          closeTimestamp: closeTimestamps[i],
-        ),
-      );
-    }
-    return ohlcvSeries;
+    return Kline(
+      open: chunkOpens.first,
+      high: chunkHighs.reduce((a, b) => a > b ? a : b),
+      low: chunkLows.reduce((a, b) => a < b ? a : b),
+      close: chunkCloses.last,
+    );
   }
 }

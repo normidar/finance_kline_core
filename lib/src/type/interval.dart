@@ -1,4 +1,4 @@
-enum Interval {
+enum Interval implements Comparable<Interval> {
   /// one second
   $1s,
 
@@ -89,5 +89,10 @@ enum Interval {
       case Interval.$1M:
         return const Duration(days: 30);
     }
+  }
+
+  @override
+  int compareTo(Interval other) {
+    return duration.inMicroseconds.compareTo(other.duration.inMicroseconds);
   }
 }

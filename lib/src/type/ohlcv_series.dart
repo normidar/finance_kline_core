@@ -1,10 +1,10 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:finance_kline_core/src/type/series.dart';
 
-class OhlcvSeries with Series {
+class OhlcvSeries extends Series {
   final List<Ohlcv> _data;
 
-  OhlcvSeries(this._data);
+  OhlcvSeries({required List<Ohlcv> data}) : _data = data;
 
   @override
   DecList get closes => _data.map((e) => e.close).toList();

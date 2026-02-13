@@ -1,17 +1,17 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
 
-mixin Series {
+abstract class Series {
+  List<double?>? _ema;
+
+  Series({
+    List<double?>? ema,
+  }) : _ema = ema;
+
   DecList get closes;
   DecList get highs;
   DecList get lows;
-  DecList get opens;
 
-  DecList prices(PriceType type) => switch (type) {
-    PriceType.close => closes,
-    PriceType.high => highs,
-    PriceType.low => lows,
-    PriceType.open => opens,
-  };
+  DecList get opens;
 
   /// 終値の指数移動平均（EMA）を計算します
   ///
@@ -19,7 +19,10 @@ mixin Series {
   List<double?> ema({
     required int period,
     PriceType priceType = PriceType.close,
-  }) => prices(priceType).ema(period);
+  }) {
+    _ema ??= prices(priceType).ema(period);
+    return _ema!;
+  }
 
   /// MACD（Moving Average Convergence Divergence）を計算します
   ///
@@ -31,11 +34,19 @@ mixin Series {
     int slowPeriod = 26,
     int signalPeriod = 9,
     PriceType priceType = PriceType.close,
-  }) => prices(priceType).macd(
-    fastPeriod: fastPeriod,
-    slowPeriod: slowPeriod,
-    signalPeriod: signalPeriod,
-  );
+  }) =>
+      prices(priceType).macd(
+        fastPeriod: fastPeriod,
+        slowPeriod: slowPeriod,
+        signalPeriod: signalPeriod,
+      );
+
+  DecList prices(PriceType type) => switch (type) {
+        PriceType.close => closes,
+        PriceType.high => highs,
+        PriceType.low => lows,
+        PriceType.open => opens,
+      };
 
   /// RSI（Relative Strength Index）を計算します
   ///
@@ -43,5 +54,6 @@ mixin Series {
   RsiSeries rsi({
     int period = 14,
     PriceType priceType = PriceType.close,
-  }) => prices(priceType).rsi(period);
+  }) =>
+      prices(priceType).rsi(period);
 }

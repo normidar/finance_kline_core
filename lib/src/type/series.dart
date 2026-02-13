@@ -1,15 +1,16 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
 
 abstract class Series {
-  List<double?>? _ema;
+  final Map<int, List<double?>> _ema;
+
   MacdSeries? _macd;
   RsiSeries? _rsi;
 
   Series({
-    List<double?>? ema,
+    Map<int, List<double?>>? ema,
     MacdSeries? macd,
     RsiSeries? rsi,
-  })  : _ema = ema,
+  })  : _ema = ema ?? <int, List<double?>>{},
         _macd = macd,
         _rsi = rsi;
 
@@ -26,8 +27,8 @@ abstract class Series {
     required int period,
     PriceType priceType = PriceType.close,
   }) {
-    _ema ??= prices(priceType).ema(period);
-    return _ema!;
+    _ema[period] ??= prices(priceType).ema(period);
+    return _ema[period]!;
   }
 
   /// MACD（Moving Average Convergence Divergence）を計算します

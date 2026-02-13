@@ -2,10 +2,16 @@ import 'package:finance_kline_core/finance_kline_core.dart';
 
 abstract class Series {
   List<double?>? _ema;
+  MacdSeries? _macd;
+  RsiSeries? _rsi;
 
   Series({
     List<double?>? ema,
-  }) : _ema = ema;
+    MacdSeries? macd,
+    RsiSeries? rsi,
+  })  : _ema = ema,
+        _macd = macd,
+        _rsi = rsi;
 
   DecList get closes;
   DecList get highs;
@@ -34,12 +40,14 @@ abstract class Series {
     int slowPeriod = 26,
     int signalPeriod = 9,
     PriceType priceType = PriceType.close,
-  }) =>
-      prices(priceType).macd(
-        fastPeriod: fastPeriod,
-        slowPeriod: slowPeriod,
-        signalPeriod: signalPeriod,
-      );
+  }) {
+    _macd ??= prices(priceType).macd(
+      fastPeriod: fastPeriod,
+      slowPeriod: slowPeriod,
+      signalPeriod: signalPeriod,
+    );
+    return _macd!;
+  }
 
   DecList prices(PriceType type) => switch (type) {
         PriceType.close => closes,
@@ -54,6 +62,8 @@ abstract class Series {
   RsiSeries rsi({
     int period = 14,
     PriceType priceType = PriceType.close,
-  }) =>
-      prices(priceType).rsi(period);
+  }) {
+    _rsi ??= prices(priceType).rsi(period);
+    return _rsi!;
+  }
 }

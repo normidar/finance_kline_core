@@ -4,7 +4,12 @@ import 'package:finance_kline_core/src/type/series.dart';
 class OhlcvSeries extends Series {
   final List<Ohlcv> _data;
 
-  OhlcvSeries({required List<Ohlcv> data}) : _data = data;
+  OhlcvSeries({
+    required List<Ohlcv> data,
+    super.ema,
+    super.macd,
+    super.rsi,
+  }) : _data = data;
 
   @override
   DecList get closes => _data.map((e) => e.close).toList();

@@ -1,27 +1,32 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:finance_kline_core/src/type/series.dart';
 
-class KlineSeries with Series {
-  final List<Kline> data;
+class KlineSeries extends Series {
+  final List<Kline> _data;
 
-  KlineSeries(this.data);
-
-  @override
-  DecList get closes => data.map((e) => e.close).toList();
-  @override
-  DecList get highs => data.map((e) => e.high).toList();
-  bool get isEmpty => data.isEmpty;
-
-  bool get isNotEmpty => data.isNotEmpty;
-  int get length => data.length;
+  KlineSeries({
+    required List<Kline> data,
+    super.ema,
+    super.macd,
+    super.rsi,
+  }) : _data = data;
 
   @override
-  DecList get lows => data.map((e) => e.low).toList();
+  DecList get closes => _data.map((e) => e.close).toList();
+  @override
+  DecList get highs => _data.map((e) => e.high).toList();
+  bool get isEmpty => _data.isEmpty;
+
+  bool get isNotEmpty => _data.isNotEmpty;
+  int get length => _data.length;
 
   @override
-  DecList get opens => data.map((e) => e.open).toList();
+  DecList get lows => _data.map((e) => e.low).toList();
 
-  Kline operator [](int index) => data[index];
+  @override
+  DecList get opens => _data.map((e) => e.open).toList();
+
+  Kline operator [](int index) => _data[index];
 
   KlineSeries merge({
     required int count,
@@ -32,7 +37,7 @@ class KlineSeries with Series {
       throw ArgumentError('Count must be greater than 0');
     }
     if (isEmpty) {
-      return KlineSeries([]);
+      return KlineSeries(data: []);
     }
     if (count == 1) {
       return this;
@@ -75,7 +80,7 @@ class KlineSeries with Series {
       }
     }
 
-    return KlineSeries(result);
+    return KlineSeries(data: result);
   }
 
   /// Use linear fit to predict the next kline.
@@ -99,7 +104,7 @@ class KlineSeries with Series {
     );
   }
 
-  List<Kline> sublist(int start, [int? end]) => data.sublist(start, end);
+  List<Kline> sublist(int start, [int? end]) => _data.sublist(start, end);
 
   Kline _mergeChunkToKline(List<Kline> chunk) {
     final chunkOpens = chunk.map((e) => e.open).toList();

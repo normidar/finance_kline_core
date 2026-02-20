@@ -7,11 +7,11 @@ part of 'ohlcv.dart';
 // **************************************************************************
 
 _Ohlcv _$OhlcvFromJson(Map<String, dynamic> json) => _Ohlcv(
-  open: Decimal.fromJson(json['open'] as String),
-  high: Decimal.fromJson(json['high'] as String),
-  low: Decimal.fromJson(json['low'] as String),
-  close: Decimal.fromJson(json['close'] as String),
-  volume: Decimal.fromJson(json['volume'] as String),
+  open: (json['open'] as num).toDouble(),
+  high: (json['high'] as num).toDouble(),
+  low: (json['low'] as num).toDouble(),
+  close: (json['close'] as num).toDouble(),
+  volume: (json['volume'] as num).toDouble(),
   openTimestamp: (json['openTimestamp'] as num).toInt(),
   closeTimestamp: (json['closeTimestamp'] as num).toInt(),
 );

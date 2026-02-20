@@ -1,10 +1,9 @@
 import 'dart:math' as math;
 
-import 'package:decimal/decimal.dart';
 import 'package:finance_kline_core/src/type/macd/macd.dart';
 import 'package:finance_kline_core/src/type/rsi/rsi.dart';
 
-typedef DecList = List<Decimal>;
+typedef DecList = List<double>;
 
 class LinearFitResult {
   const LinearFitResult({
@@ -240,11 +239,11 @@ extension DecListX on DecList {
 
     // シグナルラインを計算（MACDラインのEMA）
     // nullでない値のみをDecimalに変換してEMAを計算
-    final macdLineValues = <Decimal>[];
+    final macdLineValues = <double>[];
     final macdLineIndices = <int>[];
     for (var i = 0; i < macdLine.length; i++) {
       if (macdLine[i] != null) {
-        macdLineValues.add(Decimal.parse(macdLine[i]!.toString()));
+        macdLineValues.add(macdLine[i]!);
         macdLineIndices.add(i);
       }
     }

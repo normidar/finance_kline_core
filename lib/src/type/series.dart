@@ -4,6 +4,7 @@ abstract class Series {
   final Map<int, List<double?>> _ema;
 
   MacdSeries? _macd;
+
   RsiSeries? _rsi;
 
   Series({

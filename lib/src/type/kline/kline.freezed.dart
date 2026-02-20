@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Kline {
 
- Decimal get open; Decimal get high; Decimal get low; Decimal get close;
+ double get open; double get high; double get low; double get close;
 /// Create a copy of Kline
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $KlineCopyWith<$Res>  {
   factory $KlineCopyWith(Kline value, $Res Function(Kline) _then) = _$KlineCopyWithImpl;
 @useResult
 $Res call({
- Decimal open, Decimal high, Decimal low, Decimal close
+ double open, double high, double low, double close
 });
 
 
@@ -68,10 +68,10 @@ class _$KlineCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') @override $Res call({Object? open = null,Object? high = null,Object? low = null,Object? close = null,}) {
   return _then(_self.copyWith(
 open: null == open ? _self.open : open // ignore: cast_nullable_to_non_nullable
-as Decimal,high: null == high ? _self.high : high // ignore: cast_nullable_to_non_nullable
-as Decimal,low: null == low ? _self.low : low // ignore: cast_nullable_to_non_nullable
-as Decimal,close: null == close ? _self.close : close // ignore: cast_nullable_to_non_nullable
-as Decimal,
+as double,high: null == high ? _self.high : high // ignore: cast_nullable_to_non_nullable
+as double,low: null == low ? _self.low : low // ignore: cast_nullable_to_non_nullable
+as double,close: null == close ? _self.close : close // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -156,7 +156,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Decimal open,  Decimal high,  Decimal low,  Decimal close)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double open,  double high,  double low,  double close)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Kline() when $default != null:
 return $default(_that.open,_that.high,_that.low,_that.close);case _:
@@ -177,7 +177,7 @@ return $default(_that.open,_that.high,_that.low,_that.close);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Decimal open,  Decimal high,  Decimal low,  Decimal close)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double open,  double high,  double low,  double close)  $default,) {final _that = this;
 switch (_that) {
 case _Kline():
 return $default(_that.open,_that.high,_that.low,_that.close);case _:
@@ -197,7 +197,7 @@ return $default(_that.open,_that.high,_that.low,_that.close);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Decimal open,  Decimal high,  Decimal low,  Decimal close)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double open,  double high,  double low,  double close)?  $default,) {final _that = this;
 switch (_that) {
 case _Kline() when $default != null:
 return $default(_that.open,_that.high,_that.low,_that.close);case _:
@@ -215,10 +215,10 @@ class _Kline extends Kline {
    _Kline({required this.open, required this.high, required this.low, required this.close}): super._();
   factory _Kline.fromJson(Map<String, dynamic> json) => _$KlineFromJson(json);
 
-@override final  Decimal open;
-@override final  Decimal high;
-@override final  Decimal low;
-@override final  Decimal close;
+@override final  double open;
+@override final  double high;
+@override final  double low;
+@override final  double close;
 
 /// Create a copy of Kline
 /// with the given fields replaced by the non-null parameter values.
@@ -253,7 +253,7 @@ abstract mixin class _$KlineCopyWith<$Res> implements $KlineCopyWith<$Res> {
   factory _$KlineCopyWith(_Kline value, $Res Function(_Kline) _then) = __$KlineCopyWithImpl;
 @override @useResult
 $Res call({
- Decimal open, Decimal high, Decimal low, Decimal close
+ double open, double high, double low, double close
 });
 
 
@@ -273,10 +273,10 @@ class __$KlineCopyWithImpl<$Res>
 @override @pragma('vm:prefer-inline') $Res call({Object? open = null,Object? high = null,Object? low = null,Object? close = null,}) {
   return _then(_Kline(
 open: null == open ? _self.open : open // ignore: cast_nullable_to_non_nullable
-as Decimal,high: null == high ? _self.high : high // ignore: cast_nullable_to_non_nullable
-as Decimal,low: null == low ? _self.low : low // ignore: cast_nullable_to_non_nullable
-as Decimal,close: null == close ? _self.close : close // ignore: cast_nullable_to_non_nullable
-as Decimal,
+as double,high: null == high ? _self.high : high // ignore: cast_nullable_to_non_nullable
+as double,low: null == low ? _self.low : low // ignore: cast_nullable_to_non_nullable
+as double,close: null == close ? _self.close : close // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 

@@ -7,10 +7,10 @@ part of 'kline.dart';
 // **************************************************************************
 
 _Kline _$KlineFromJson(Map<String, dynamic> json) => _Kline(
-  open: Decimal.fromJson(json['open'] as String),
-  high: Decimal.fromJson(json['high'] as String),
-  low: Decimal.fromJson(json['low'] as String),
-  close: Decimal.fromJson(json['close'] as String),
+  open: (json['open'] as num).toDouble(),
+  high: (json['high'] as num).toDouble(),
+  low: (json['low'] as num).toDouble(),
+  close: (json['close'] as num).toDouble(),
 );
 
 Map<String, dynamic> _$KlineToJson(_Kline instance) => <String, dynamic>{

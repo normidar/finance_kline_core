@@ -9,11 +9,11 @@ part 'ohlcv.g.dart';
 @freezed
 abstract class Ohlcv with _$Ohlcv {
   factory Ohlcv({
-    required Decimal open,
-    required Decimal high,
-    required Decimal low,
-    required Decimal close,
-    required Decimal volume,
+    required double open,
+    required double high,
+    required double low,
+    required double close,
+    required double volume,
     required int openTimestamp,
     required int closeTimestamp,
   }) = _Ohlcv;
@@ -22,7 +22,7 @@ abstract class Ohlcv with _$Ohlcv {
 
   const Ohlcv._();
 
-  Decimal price(OhlcvType type) {
+  double price(OhlcvType type) {
     switch (type) {
       case OhlcvType.open:
         return open;

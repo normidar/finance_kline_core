@@ -1,9 +1,8 @@
 ---
 dependencies:
-  decimal: ^3.2.4
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
-description: "'A comprehensive Dart package for financial candlestick (K-line) data analysis with technical indicators, statistical analysis, and precision decimal calculations.'"
+description: '''A comprehensive Dart package for financial candlestick (K-line) data analysis with technical indicators, statistical analysis, and precision decimal calculations.'''
 dev_dependencies:
   auto_exporter: ^4.0.0
   build_runner: ^2.7.1
@@ -13,8 +12,8 @@ dev_dependencies:
   very_good_analysis: any
 environment:
   sdk: ^3.8.0
-name: finance_kline_core
 homepage: https://github.com/normidar/finance_kline_core
+name: finance_kline_core
 topics:
   - finance
   - kline

@@ -1,3 +1,4 @@
+export 'package:finance_kline_core/src/fkc_engine.dart';
 export 'package:finance_kline_core/src/type/dec_list.dart';
 export 'package:finance_kline_core/src/type/interval.dart';
 export 'package:finance_kline_core/src/type/kline/kline.dart';
@@ -8,3 +9,4 @@ export 'package:finance_kline_core/src/type/ohlcv/ohlcv.dart';
 export 'package:finance_kline_core/src/type/ohlcv_series.dart';
 export 'package:finance_kline_core/src/type/pipe_list.dart';
 export 'package:finance_kline_core/src/type/rsi/rsi.dart';
+export 'package:finance_kline_core/src/type/series.dart';

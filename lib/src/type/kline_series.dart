@@ -1,5 +1,4 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
-import 'package:finance_kline_core/src/type/series.dart';
 
 class KlineSeries extends Series {
   final List<Kline> _data;
@@ -85,7 +84,7 @@ class KlineSeries extends Series {
 
   /// Use linear fit to predict the next kline.
   /// [scale] は小数点以下の桁数を指定します。
-  Kline predictNext({int scale = 4}) {
+  Kline predictNext() {
     if (length < 2) {
       throw ArgumentError(
         'KlineSeries must have at least 2 klines to predict next',
@@ -95,12 +94,11 @@ class KlineSeries extends Series {
     final highsFit = highs.linearFit().predict(highs.length.toDouble() + 1);
     final lowsFit = lows.linearFit().predict(lows.length.toDouble() + 1);
     final opensFit = opens.linearFit().predict(opens.length.toDouble() + 1);
-    return Kline.fromDouble(
+    return Kline(
       open: opensFit,
       high: highsFit,
       low: lowsFit,
       close: closesFit,
-      scale: scale,
     );
   }
 

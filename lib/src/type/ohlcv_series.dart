@@ -41,7 +41,7 @@ class OhlcvSeries extends Series {
       final diff = lastClose - end;
       if (diff < 0) throw UnsupportedError('end over lastCode');
       final interval = _data[1].closeTimestamp - _data[0].closeTimestamp;
-      endIndex = _data.length - diff ~/ interval - 1;
+      endIndex = _data.length - diff ~/ interval;
     }
     if (start != null) {
       final firstOpen = _data[0].openTimestamp;

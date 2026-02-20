@@ -1,10 +1,8 @@
-import 'package:decimal/decimal.dart';
 import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'ohlcv.freezed.dart';
 part 'ohlcv.g.dart';
-
 
 @freezed
 abstract class Ohlcv with _$Ohlcv {

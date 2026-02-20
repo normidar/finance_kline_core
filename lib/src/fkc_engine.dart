@@ -13,6 +13,20 @@ class FKCEngine {
     _ohlcvSeriesMap[interval] = ohlcvSeries;
   }
 
+  /// baseIntervalの時間足のwrapperで分析する関数を渡して分析を行う
+  List<T> analyze<T>({
+    required T Function(OhlcvSeriesWrapper wrapper) func,
+    required int start,
+  }) {
+    final result = <T>[];
+    final baseIntervalWrapper = select(baseInterval);
+    if (baseIntervalWrapper == null) {
+      return [];
+    }
+    for (var i = 0; i < baseIntervalWrapper.ohlcvSeries.length; i++) {}
+    return result;
+  }
+
   OhlcvSeries? getOhlcvSeries(Interval interval) {
     return _ohlcvSeriesMap[interval];
   }
@@ -30,6 +44,8 @@ class FKCEngine {
   }
 }
 
+/// 各時間足のデータをラップするクラス
+/// jumpToを使って別の時間足のデータを取得できる
 class OhlcvSeriesWrapper {
   final FKCEngine _engine;
 

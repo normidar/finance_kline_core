@@ -84,23 +84,23 @@ class KlineSeries extends Series {
 
   /// Use linear fit to predict the next kline.
   /// [scale] は小数点以下の桁数を指定します。
-  Kline predictNext() {
-    if (length < 2) {
-      throw ArgumentError(
-        'KlineSeries must have at least 2 klines to predict next',
-      );
-    }
-    final closesFit = closes.linearFit().predict(closes.length.toDouble() + 1);
-    final highsFit = highs.linearFit().predict(highs.length.toDouble() + 1);
-    final lowsFit = lows.linearFit().predict(lows.length.toDouble() + 1);
-    final opensFit = opens.linearFit().predict(opens.length.toDouble() + 1);
-    return Kline(
-      open: opensFit,
-      high: highsFit,
-      low: lowsFit,
-      close: closesFit,
-    );
-  }
+  // Kline predictNext() {
+  //   if (length < 2) {
+  //     throw ArgumentError(
+  //       'KlineSeries must have at least 2 klines to predict next',
+  //     );
+  //   }
+  //   final closesFit = closes.linearFit().predict(closes.length.toDouble() + 1);
+  //   final highsFit = highs.linearFit().predict(highs.length.toDouble() + 1);
+  //   final lowsFit = lows.linearFit().predict(lows.length.toDouble() + 1);
+  //   final opensFit = opens.linearFit().predict(opens.length.toDouble() + 1);
+  //   return Kline(
+  //     open: opensFit,
+  //     high: highsFit,
+  //     low: lowsFit,
+  //     close: closesFit,
+  //   );
+  // }
 
   List<Kline> sublist(int start, [int? end]) => _data.sublist(start, end);
 
@@ -109,7 +109,6 @@ class KlineSeries extends Series {
     final chunkHighs = chunk.map((e) => e.high).toList();
     final chunkLows = chunk.map((e) => e.low).toList();
     final chunkCloses = chunk.map((e) => e.close).toList();
-
     return Kline(
       open: chunkOpens.first,
       high: chunkHighs.reduce((a, b) => a > b ? a : b),

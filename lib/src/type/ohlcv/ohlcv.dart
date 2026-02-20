@@ -35,7 +35,6 @@ abstract class Ohlcv with _$Ohlcv {
     }
   }
 
-  Kline toKline() => Kline.fromOhlcv(this);
 }
 
 enum OhlcvType {

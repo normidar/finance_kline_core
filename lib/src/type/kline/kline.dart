@@ -1,4 +1,5 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
+import 'package:finance_kline_core/src/enum/price_type.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'kline.freezed.dart';
@@ -56,11 +57,4 @@ abstract class Kline with _$Kline {
       closeTimestamp: closeTimestamp,
     );
   }
-}
-
-enum PriceType {
-  open,
-  high,
-  low,
-  close,
 }

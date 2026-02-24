@@ -2,13 +2,14 @@ import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:finance_kline_core/src/enum/price_type.dart';
 
 /// 線形数列
-abstract class LinearSignalSeries extends SignalSeries {
-  final List<SignalUnit> units;
+class LinearSignalSeries<T extends SignalUnit> extends SignalSeries {
+  final List<T> units;
+
   LinearSignalSeries({
     required this.units,
   });
 
-  List<SignalUnit> subByTimestamp({int? start, int? end}) {
+  LinearSignalSeries<T> subByTimestamp({int? start, int? end}) {
     if (units.length < 2) throw UnsupportedError('data lenght must over 2');
     var endIndex = units.length - 1;
     var startIndex = 0;
@@ -26,11 +27,19 @@ abstract class LinearSignalSeries extends SignalSeries {
       final interval = units[1].openTimestamp - units[0].openTimestamp;
       startIndex = diff ~/ interval;
     }
-    return units.sublist(startIndex, endIndex);
+    return LinearSignalSeries<T>(units: units.sublist(startIndex, endIndex));
+  }
+
+  @override
+  LinearSignalSeries<T> sublist({int? start, int? end}) {
+    return LinearSignalSeries<T>(units: units.sublist(start ?? 0, end));
   }
 }
 
 abstract class SignalLogic {
+  /// 指定したパラメータでシリーズを計算する
+  /// 例えばEMAを計算する場合はclosesをdataとして渡す
+  /// paramsはEMAのparamsを渡す
   SignalSeries calculate({
     required SignalParams params,
     required List<double> data,
@@ -48,6 +57,7 @@ abstract class SignalParams {}
 
 /// 疑似的な数列
 abstract class SignalSeries {
+  /// 指定した範囲のシリーズを取得する
   SignalSeries sublist({int? start, int? end});
 }
 

@@ -1,7 +1,7 @@
 export 'package:finance_kline_core/src/enum/interval.dart';
 export 'package:finance_kline_core/src/enum/merge_alignment.dart';
 export 'package:finance_kline_core/src/fkc_engine.dart';
-export 'package:finance_kline_core/src/model/kline/kline.dart';
+export 'package:finance_kline_core/src/model/kline.dart';
 export 'package:finance_kline_core/src/type/dec_list.dart';
 export 'package:finance_kline_core/src/type/macd/macd.dart';
 export 'package:finance_kline_core/src/type/ohlcv/ohlcv.dart';

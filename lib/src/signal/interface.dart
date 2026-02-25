@@ -1,13 +1,12 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
-import 'package:finance_kline_core/src/enum/price_type.dart';
 
 /// 線形数列
 class LinearSignalSeries<T extends SignalUnit> extends SignalSeries {
-  final List<T> units;
-
   LinearSignalSeries({
     required this.units,
   });
+
+  final List<T> units;
 
   LinearSignalSeries<T> subByTimestamp({int? start, int? end}) {
     if (units.length < 2) throw UnsupportedError('data lenght must over 2');
@@ -49,8 +48,7 @@ abstract class SignalLogic {
     required Series klineSeries,
     required PriceType priceType,
     required SignalParams params,
-  }) =>
-      calculate(params: params, data: klineSeries.prices(priceType));
+  }) => calculate(params: params, data: klineSeries.prices(priceType));
 }
 
 abstract class SignalParams {}
@@ -63,11 +61,11 @@ abstract class SignalSeries {
 
 /// 線形数列の中の1つのデータ
 abstract class SignalUnit {
-  final int openTimestamp;
-  final int closeTimestamp;
-
   SignalUnit({
     required this.openTimestamp,
     required this.closeTimestamp,
   });
+  final int openTimestamp;
+
+  final int closeTimestamp;
 }

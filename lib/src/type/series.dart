@@ -2,13 +2,13 @@ import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:finance_kline_core/src/enum/price_type.dart';
 
 abstract class Series {
-  final Map<int, List<double?>> _ema;
+  final Map<String, List<double?>> _ema;
   final Map<String, List<Macd?>> _macdCache;
   final Map<String, List<Rsi?>> _rsiCache;
 
   Series({
-    Map<int, List<double?>>? ema,
-  })  : _ema = ema ?? <int, List<double?>>{},
+    Map<String, List<double?>>? ema,
+  })  : _ema = ema ?? <String, List<double?>>{},
         _macdCache = {},
         _rsiCache = {};
 
@@ -17,15 +17,16 @@ abstract class Series {
   DecList get lows;
   DecList get opens;
 
-  /// 終値の指数移動平均（EMA）を計算します
+  /// 指数移動平均（EMA）を計算します
   ///
-  /// [period] 期間を指定します
+  /// [period] 期間
+  /// [priceType] 計算対象の価格種別（デフォルト: close）
   List<double?> ema({
     required int period,
     PriceType priceType = PriceType.close,
   }) {
-    _ema[period] ??= prices(priceType).ema(period);
-    return _ema[period]!;
+    final key = '$period-${priceType.name}';
+    return _ema[key] ??= prices(priceType).ema(period);
   }
 
   /// MACD（Moving Average Convergence Divergence）を計算します
@@ -56,7 +57,8 @@ abstract class Series {
 
   /// RSI（Relative Strength Index）を計算します
   ///
-  /// [period] 期間を指定します（デフォルト: 14）
+  /// [period] 期間（デフォルト: 14）
+  /// [priceType] 計算対象の価格種別（デフォルト: close）
   List<Rsi?> rsi({
     int period = 14,
     PriceType priceType = PriceType.close,

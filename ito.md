@@ -84,9 +84,9 @@ FKCEngine
 
 ```
 SignalLogic (abstract)      ← 戦略の「計算ロジック」
-  ├── EmaLogic              → EmaSignalSeries
-  ├── RsiLogic              → RsiSignalSeries
-  └── MacdLogic             → MacdSignalSeries
+  ├── EmaLogic              → EmaSeries
+  ├── RsiLogic              → RsiSeries
+  └── MacdLogic             → MacdSeries
 
 SignalParams (abstract)     ← 戦略の「パラメータ」
   ├── EmaParams (periods: Set<int>)
@@ -94,9 +94,9 @@ SignalParams (abstract)     ← 戦略の「パラメータ」
   └── MacdParams (fastPeriod, slowPeriod, signalPeriod)
 
 SignalSeries (abstract)     ← 戦略の「出力系列」
-  ├── EmaSignalSeries       (Map<period, List<double?>>)
-  ├── RsiSignalSeries       + stateOf() + RsiState enum
-  ├── MacdSignalSeries      + isBullishCross / isBearishCross
+  ├── EmaSeries             (Map<period, List<double?>> + isBullishCross / isBearishCross)
+  ├── RsiSeries             + stateOf() + RsiState enum
+  ├── MacdSeries            + isBullishCross / isBearishCross
   └── LinearSignalSeries<T> (タイムスタンプ付き汎用系列、未活用)
 ```
 
@@ -116,60 +116,25 @@ SignalSeries (abstract)     ← 戦略の「出力系列」
 | PipeList（文脈付き反復） | 完成 |
 | Series MACDキャッシュバグ修正 | 完成 |
 | Series RSIキャッシュバグ修正 | 完成 |
+| Series EMAキャッシュのpriceType対応 | 完成 |
 | K線マージ（OhlcvSeries.merge） | 完成 |
 | FKCEngine.analyze() | 完成 |
-| EmaLogic / EmaSignalSeries | 完成 |
-| RsiLogic / RsiParams / RsiSignalSeries | 完成 |
-| MacdLogic / MacdParams / MacdSignalSeries | 完成 |
-| Series EMAキャッシュのpriceType対応 | **バグあり・未修正** |
-| OhlcvSeriesWrapper.analyze() | 未実装 |
-| FKCEngine マージ連携 | 未実装 |
-| MTF analyze内でのjumpToスライス対応 | 未実装 |
-| LinearSignalSeries の活用 | 未実装 |
-| テスト | 未実装 |
-| READMEの整合性修正 | 未実装 |
+| OhlcvSeriesWrapper.analyze() | 完成 |
+| MTF analyze内でのjumpToスライス対応 | 完成 |
+| EmaLogic / EmaSeries | 完成 |
+| RsiLogic / RsiParams / RsiSeries | 完成 |
+| MacdLogic / MacdParams / MacdSeries | 完成 |
+| EmaSeries クロス検出（isBullishCross / isBearishCross） | 完成 |
+| テスト（80テスト・全パス） | 完成 |
+| README.md 現行API対応 | 完成 |
+| FKCEngine マージ連携 | 未実装（設計判断待ち） |
+| LinearSignalSeries の活用 | 未実装（削除候補） |
 
 ---
 
 ## 残っている課題
 
-### バグ: Series._emaのキャッシュキーにpriceTypeが含まれていない
-
-`series.dart` の `_ema` は `Map<int, List<double?>>` でキャッシュしているが、
-キーが `period` だけで `priceType` が含まれていない。
-
-```dart
-// 現状: period だけでキャッシュ → priceType が違っても同じ結果が返る（バグ）
-_ema[period] ??= prices(priceType).ema(period);
-
-// 正しくは MACD/RSI と同様にキーに priceType を含める
-final key = '$period-${priceType.name}';
-_ema[key] ??= prices(priceType).ema(period);
-```
-
-MACDとRSIは修正済みだが、EMAのみ残っている。
-
----
-
-### 未実装: OhlcvSeriesWrapper.analyze()
-
-目指す記法 `engine.select(interval).analyze(...)` のために必要。
-現在は `FKCEngine.analyze()` でのみ実行でき、`OhlcvSeriesWrapper` には `analyze()` がない。
-
-```dart
-// 現状: FKCEngineに直接書く必要がある
-engine.analyze<bool>(start: 26, func: (w) => ...);
-
-// 目標: selectしてからanalyzeできる
-engine.select(Interval.$1h).analyze(start: 26, func: (w) => ...);
-```
-
-`OhlcvSeriesWrapper` に `analyze<T>()` を追加するか、
-`FKCEngine.analyze()` の `baseInterval` 縛りをなくして任意の時間足で実行できるようにする設計が必要。
-
----
-
-### 未実装: FKCEngine へのマージ連携
+### 設計判断: FKCEngine へのマージ連携
 
 `addOhlcvSeries` 時に、`baseInterval` から上位時間足を自動マージ生成するかを決めていない。
 現在は各時間足のデータを手動で別々に登録する方式のみ。
@@ -180,20 +145,10 @@ engine.select(Interval.$1h).analyze(start: 26, func: (w) => ...);
 
 ---
 
-### 未実装: MTF analyze内でのjumpToスライス
-
-`FKCEngine.analyze()` ループ内で `wrapper.jumpTo(otherInterval)` を呼ぶと、
-そのタイムフレームの**フルデータ**が返る（スライスされない）。
-
-本来、MTF分析では「baseIntervalのバーiに対応する時刻までの他時間足データ」が必要。
-現状は `jumpTo` がエンジンの `select()` を呼ぶだけで時刻フィルタが行われない。
-
----
-
-### 未実装: LinearSignalSeries の活用
+### 設計判断: LinearSignalSeries の活用か削除か
 
 `LinearSignalSeries<T extends SignalUnit>` はタイムスタンプ付きの汎用シリーズとして設計されているが、
-`EmaSignalSeries` / `RsiSignalSeries` / `MacdSignalSeries` はいずれもインデックスベースで実装されており、
+`EmaSeries` / `RsiSeries` / `MacdSeries` はいずれもインデックスベースで実装されており、
 `LinearSignalSeries` を使っていない。
 
 将来的にシグナル結果に時刻情報を付与したい場合に活用するか、
@@ -201,67 +156,19 @@ engine.select(Interval.$1h).analyze(start: 26, func: (w) => ...);
 
 ---
 
-### 未実装: EMAクロス検出
-
-`EmaSignalSeries` はEMAの値列を持つが、
-「fast EMA が slow EMA を上抜けた」というクロス判定のヘルパーがない。
-`MacdSignalSeries.isBullishCross` / `isBearishCross` と同様のAPIが必要。
-
-```dart
-// EmaSignalSeriesに追加したいAPI
-bool isBullishCross({required int fast, required int slow});
-bool isBearishCross({required int fast, required int slow});
-```
-
----
-
-### 未実装: テスト
-
-テストファイルが一切ない。publishできる品質にするために必須。
-
-| テスト対象 | 内容 |
-|---|---|
-| 指標計算の数値精度 | EMA/SMA/MACD/RSI/線形回帰をTradingViewの値と照合 |
-| エッジケース | 空リスト・データ不足・全同値・avgLoss=0 |
-| K線マージ4通り | left+strict / left+partial / right+strict / right+partial |
-| Seriesキャッシュ正確性 | 同パラメータで同インスタンス、異パラメータで別結果 |
-| SignalLogic | EmaLogic / RsiLogic / MacdLogic の出力検証 |
-
----
-
-### 未実装: READMEの整合性修正
-
-README.md が削除済みAPIを参照している:
-- `merge` / `predictNext` / `toOhlcvSeries` (KlineSeries削除時に消えた)
-- `OhlcvSeries.merge()` / `FKCEngine.analyze()` / SignalLogic群の使い方が未記載
-
----
-
 ## TODO — 残りのロードマップ
 
-### 今すぐ直すべきバグ
+### v1.0.0 公開に向けて完了済み ✅
 
-- [ ] **Series._emaのキャッシュキーに `priceType` を追加する**
-  - `Map<int, List<double?>>` → `Map<String, List<double?>>` に変更
-  - キー: `'$period-${priceType.name}'`
-
----
-
-### 近い将来（v1.0.0 に向けて）
-
-- [ ] **`OhlcvSeriesWrapper.analyze()` を追加する**
-  - `engine.select(interval).analyze(start:, func:)` という記法を実現する
-
-- [ ] **`EmaSignalSeries` にクロス検出を追加する**
-  - `isBullishCross({required int fast, required int slow}) → bool`
-  - `isBearishCross({required int fast, required int slow}) → bool`
-
-- [ ] **テストを書く（P5）**
-  - `test/dec_list_test.dart` — 指標計算の数値精度
-  - `test/ohlcv_series_test.dart` — merge・キャッシュ
-  - `test/signal_logic_test.dart` — SignalLogic群
-
-- [ ] **README.md を現在の実装に合わせて更新する（P6）**
+- [x] Series._emaキャッシュキーに `priceType` を追加（バグ修正）
+- [x] `OhlcvSeriesWrapper.analyze()` の追加（`engine.select(interval).analyze(...)` 記法）
+- [x] MTF analyze 内での `jumpTo` 時刻スライス対応（ルックアヘッドバイアス防止）
+- [x] `EmaSeries` にクロス検出追加（`isBullishCross` / `isBearishCross`）
+- [x] テスト追加（80テスト・全パス）
+  - `test/dec_list_test.dart` — EMA/SMA/MACD/RSI/linearFit/correlation
+  - `test/ohlcv_series_test.dart` — merge全4通り・subUpToTimestamp・キャッシュ
+  - `test/signal_logic_test.dart` — SignalLogic群・FKCEngine・MTF
+- [x] README.md を現行APIに合わせて完全書き直し
 
 ---
 
@@ -269,10 +176,6 @@ README.md が削除済みAPIを参照している:
 
 - [ ] **FKCEngine マージ連携の方針を決める**
   - 手動登録のみ継続か、上位時間足の自動生成を追加するか
-
-- [ ] **MTF analyze での jumpTo スライス対応**
-  - `analyze` ループ内の `jumpTo` が時刻対応したスライスを返すように改修するか
-  - `OhlcvSeries.subByTimestamp` を活用する方向が現実的
 
 - [ ] **`LinearSignalSeries` の活用か削除かを決める**
   - タイムスタンプ付きシグナルが必要になったら活用
@@ -301,19 +204,18 @@ README.md が削除済みAPIを参照している:
 ### 優先順序まとめ
 
 ```
-[バグ] Series._emaキャッシュキー修正
+✅ Series._emaキャッシュキー修正
+✅ OhlcvSeriesWrapper.analyze() 追加
+✅ EmaSeriesにクロス検出追加
+✅ MTF jumpTo 時刻スライス対応
+✅ テスト追加（80テスト・全パス）
+✅ README更新
   ↓
-OhlcvSeriesWrapper.analyze() 追加
-  ↓
-EmaSignalSeriesにクロス検出追加
-  ↓
-テスト追加（指標精度 → merge → SignalLogic）
-  ↓
-README更新
+【次のステップ】FKCEngine自動マージ / LinearSignalSeries設計判断
   ↓
 v1.0.0 pub.dev公開
   ↓
-FKCEngine自動マージ / MTFスライス / 戦略合成（将来）
+戦略合成 / バックテスト / ストリーミング（将来）
 ```
 
 ---

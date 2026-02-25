@@ -1,5 +1,6 @@
 export 'package:finance_kline_core/src/enum/interval.dart';
 export 'package:finance_kline_core/src/enum/merge_alignment.dart';
+export 'package:finance_kline_core/src/enum/price_type.dart';
 export 'package:finance_kline_core/src/fkc_engine.dart';
 export 'package:finance_kline_core/src/model/kline.dart';
 export 'package:finance_kline_core/src/signal/ema/ema_logic.dart';

@@ -25,9 +25,19 @@ class OhlcvSeries extends Series {
 
   DecList get volumes => _data.map((e) => e.volume).toList();
 
+  Ohlcv get first => _data.first;
+  Ohlcv get last => _data.last;
+
   Ohlcv operator [](int index) => _data[index];
 
-  List<Ohlcv> sublist(int start, [int? end]) => _data.sublist(start, end);
+  /// [closeTimestamp] 以前のローソク足だけを含む新しい [OhlcvSeries] を返します
+  ///
+  /// [OhlcvSeriesWrapper.jumpTo] のMTF時刻フィルタで使われます。
+  OhlcvSeries subUpToTimestamp(int closeTimestamp) {
+    final filtered =
+        _data.where((e) => e.closeTimestamp <= closeTimestamp).toList();
+    return OhlcvSeries(data: filtered);
+  }
 
   List<Ohlcv> subByTimestamp({int? start, int? end}) {
     if (_data.length < 2) throw UnsupportedError('data lenght must over 2');
@@ -50,6 +60,8 @@ class OhlcvSeries extends Series {
     return _data.sublist(startIndex, endIndex);
   }
 
+  List<Ohlcv> sublist(int start, [int? end]) => _data.sublist(start, end);
+
   /// n本のローソク足を1本にマージして新しい [OhlcvSeries] を返します
   ///
   /// [n] マージするローソク足の本数
@@ -61,10 +73,10 @@ class OhlcvSeries extends Series {
   ///   - [MergeMode.partial]: 端数も含める
   ///
   /// マージルール:
-  ///   open  = チャンク最初の open
-  ///   high  = チャンク内の high の最大値
-  ///   low   = チャンク内の low の最小値
-  ///   close = チャンク最後の close
+  ///   open   = チャンク最初の open
+  ///   high   = チャンク内の high の最大値
+  ///   low    = チャンク内の low の最小値
+  ///   close  = チャンク最後の close
   ///   volume = チャンク内の volume の合計
   OhlcvSeries merge(
     int n, {
@@ -78,22 +90,18 @@ class OhlcvSeries extends Series {
     final rawChunks = <List<Ohlcv>>[];
 
     if (alignment == MergeAlignment.left) {
-      // 古い方から n 本ずつグループ化
       for (var i = 0; i < _data.length; i += n) {
         rawChunks.add(_data.sublist(i, (i + n).clamp(0, _data.length)));
       }
     } else {
-      // 新しい方から n 本ずつグループ化
       for (var i = _data.length; i > 0; i -= n) {
         rawChunks.add(_data.sublist((i - n).clamp(0, _data.length), i));
       }
-      // タイムスタンプ昇順に戻す
       rawChunks.sort(
         (a, b) => a.first.openTimestamp.compareTo(b.first.openTimestamp),
       );
     }
 
-    // strict モードでは n 本に満たないチャンクを除外
     final chunks = mode == MergeMode.strict
         ? rawChunks.where((c) => c.length == n).toList()
         : rawChunks;

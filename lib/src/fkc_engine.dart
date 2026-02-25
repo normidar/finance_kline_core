@@ -1,67 +1,67 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
 
 class FKCEngine {
-  final Interval baseInterval;
-
-  final Map<Interval, OhlcvSeries> _ohlcvSeriesMap = {};
-
   FKCEngine({
     required this.baseInterval,
   });
 
-  void addOhlcvSeries(Interval interval, OhlcvSeries ohlcvSeries) {
-    _ohlcvSeriesMap[interval] = ohlcvSeries;
+  final Interval baseInterval;
+
+  final Map<Interval, KlineSeries> _klineSeriesMap = {};
+
+  void addKlineSeries(Interval interval, KlineSeries klineSeries) {
+    _klineSeriesMap[interval] = klineSeries;
   }
 
   /// [baseInterval] の時間足でバーごとに [func] を呼び出し、結果リストを返します
   ///
-  /// 詳細は [OhlcvSeriesWrapper.analyze] を参照してください。
+  /// 詳細は [KlineSeriesWrapper.analyze] を参照してください。
   List<T> analyze<T>({
-    required T Function(OhlcvSeriesWrapper wrapper) func,
+    required T Function(KlineSeriesWrapper wrapper) func,
     required int start,
   }) {
     return select(baseInterval)?.analyze(start: start, func: func) ?? [];
   }
 
-  OhlcvSeries? getOhlcvSeries(Interval interval) {
-    return _ohlcvSeriesMap[interval];
+  KlineSeries? getKlineSeries(Interval interval) {
+    return _klineSeriesMap[interval];
   }
 
-  OhlcvSeriesWrapper? select(Interval interval) {
-    final ohlcvSeries = getOhlcvSeries(interval);
-    if (ohlcvSeries == null) return null;
-    return OhlcvSeriesWrapper(
+  KlineSeriesWrapper? select(Interval interval) {
+    final klineSeries = getKlineSeries(interval);
+    if (klineSeries == null) return null;
+    return KlineSeriesWrapper(
       interval: interval,
-      ohlcvSeries: ohlcvSeries,
+      klineSeries: klineSeries,
       engine: this,
     );
   }
 }
 
 /// 各時間足のデータをラップするクラス
-class OhlcvSeriesWrapper {
-  final FKCEngine _engine;
+class KlineSeriesWrapper {
+  KlineSeriesWrapper({
+    required this.interval,
+    required this.klineSeries,
+    required FKCEngine engine,
+    int? currentCloseTimestamp,
+  }) : engine = engine,
+       _currentCloseTimestamp = currentCloseTimestamp;
+
+  final FKCEngine engine;
 
   final Interval interval;
 
-  final OhlcvSeries ohlcvSeries;
+  final KlineSeries klineSeries;
 
   /// analyze() ループ中に設定される現在バーの closeTimestamp
   ///
   /// null のとき jumpTo() はタイムフィルタを行わない（通常の select と同じ）
   final int? _currentCloseTimestamp;
 
-  OhlcvSeriesWrapper({
-    required this.interval,
-    required this.ohlcvSeries,
-    required FKCEngine engine,
-    int? currentCloseTimestamp,
-  })  : _engine = engine,
-        _currentCloseTimestamp = currentCloseTimestamp;
-
   /// バーごとに [func] を呼び出し、結果リストを返します
   ///
-  /// [func] には「そのバーまでの全データ」を持つ [OhlcvSeriesWrapper] が渡されます。
+  /// [func] には「そのバーまでの全データ」を持つ [KlineSeriesWrapper] が渡されます。
   /// [func] 内で [jumpTo] を使うと、そのバーの closeTimestamp 以前のデータだけが返ります。
   ///
   /// [start] 分析を開始するインデックス（指標のウォームアップ期間分を指定する）
@@ -71,7 +71,7 @@ class OhlcvSeriesWrapper {
   ///   start: 33, // MACDのウォームアップ: slowPeriod(26) + signalPeriod(9) - 2
   ///   func: (wrapper) {
   ///     final result = MacdLogic().calculateWithKline(
-  ///       klineSeries: wrapper.ohlcvSeries,
+  ///       klineSeries: wrapper.klineSeries,
   ///       priceType: PriceType.close,
   ///       params: MacdParams(),
   ///     ) as MacdSeries;
@@ -81,18 +81,16 @@ class OhlcvSeriesWrapper {
   /// ```
   List<T> analyze<T>({
     required int start,
-    required T Function(OhlcvSeriesWrapper wrapper) func,
+    required T Function(KlineSeriesWrapper wrapper) func,
   }) {
     final result = <T>[];
-    for (var i = start; i < ohlcvSeries.length; i++) {
-      final currentTs = ohlcvSeries[i].closeTimestamp;
-      final sliced = OhlcvSeries(
-        data: ohlcvSeries.sublist(0, i + 1),
-      );
-      final wrapper = OhlcvSeriesWrapper(
+    for (var i = start; i < klineSeries.units.length; i++) {
+      final currentTs = klineSeries.units[i].closeTimestamp;
+      final sliced = klineSeries.subByTimestamp(end: currentTs);
+      final wrapper = KlineSeriesWrapper(
         interval: interval,
-        ohlcvSeries: sliced,
-        engine: _engine,
+        klineSeries: sliced as KlineSeries,
+        engine: engine,
         currentCloseTimestamp: currentTs,
       );
       result.add(func(wrapper));
@@ -105,19 +103,19 @@ class OhlcvSeriesWrapper {
   /// [analyze] ループ内では、現在バーの closeTimestamp 以前のデータのみが返ります。
   /// これにより、MTF（マルチタイムフレーム）分析で「未来のデータを参照しない」
   /// ことが保証されます。
-  OhlcvSeriesWrapper? jumpTo(Interval interval) {
-    final series = _engine.getOhlcvSeries(interval);
+  KlineSeriesWrapper? jumpTo(Interval interval) {
+    final series = engine.getKlineSeries(interval);
     if (series == null) return null;
 
     final ts = _currentCloseTimestamp;
     if (ts != null) {
-      return OhlcvSeriesWrapper(
+      return KlineSeriesWrapper(
         interval: interval,
-        ohlcvSeries: series.subUpToTimestamp(ts),
-        engine: _engine,
+        klineSeries: series.subByTimestamp(end: ts) as KlineSeries,
+        engine: engine,
         currentCloseTimestamp: ts,
       );
     }
-    return _engine.select(interval);
+    return engine.select(interval);
   }
 }

@@ -42,4 +42,18 @@ class CompactSeries extends SignalSeries {
         rsi: rsi.sublist(start: start, end: end),
         ema: ema.sublist(start: start, end: end),
       );
+
+  /// タイムスタンプ範囲でシリーズを切り出します
+  ///
+  /// 内部の [kline] で [LinearSignalSeries.subByTimestamp] を実行して
+  /// インデックスを求め、他のシリーズも同じ範囲で切り出します。
+  CompactSeries subByTimestamp({int? start, int? end}) {
+    final (startIndex, endIndex) = kline.subByTimestamp(start: start, end: end);
+    return CompactSeries(
+      kline: KlineSeries(units: kline.units.sublist(startIndex, endIndex)),
+      macd: macd.sublist(start: startIndex, end: endIndex),
+      rsi: rsi.sublist(start: startIndex, end: endIndex),
+      ema: ema.sublist(start: startIndex, end: endIndex),
+    );
+  }
 }

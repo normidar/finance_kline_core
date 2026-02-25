@@ -1,5 +1,4 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
-import 'package:finance_kline_core/src/type/series.dart';
 
 class OhlcvSeries extends Series {
   final List<Ohlcv> _data;
@@ -7,8 +6,6 @@ class OhlcvSeries extends Series {
   OhlcvSeries({
     required List<Ohlcv> data,
     super.ema,
-    super.macd,
-    super.rsi,
   }) : _data = data;
 
   @override
@@ -51,5 +48,68 @@ class OhlcvSeries extends Series {
       startIndex = diff ~/ interval;
     }
     return _data.sublist(startIndex, endIndex);
+  }
+
+  /// n本のローソク足を1本にマージして新しい [OhlcvSeries] を返します
+  ///
+  /// [n] マージするローソク足の本数
+  /// [alignment] グループの起点方向
+  ///   - [MergeAlignment.left]: 古いデータから順にグループ化（デフォルト）
+  ///   - [MergeAlignment.right]: 新しいデータから順にグループ化
+  /// [mode] 端数（n本に満たないチャンク）の扱い
+  ///   - [MergeMode.strict]: 端数を捨てる（デフォルト）
+  ///   - [MergeMode.partial]: 端数も含める
+  ///
+  /// マージルール:
+  ///   open  = チャンク最初の open
+  ///   high  = チャンク内の high の最大値
+  ///   low   = チャンク内の low の最小値
+  ///   close = チャンク最後の close
+  ///   volume = チャンク内の volume の合計
+  OhlcvSeries merge(
+    int n, {
+    MergeAlignment alignment = MergeAlignment.left,
+    MergeMode mode = MergeMode.strict,
+  }) {
+    if (n <= 0) throw ArgumentError('n must be greater than 0');
+    if (_data.isEmpty) return OhlcvSeries(data: []);
+    if (n == 1) return OhlcvSeries(data: List.of(_data));
+
+    final rawChunks = <List<Ohlcv>>[];
+
+    if (alignment == MergeAlignment.left) {
+      // 古い方から n 本ずつグループ化
+      for (var i = 0; i < _data.length; i += n) {
+        rawChunks.add(_data.sublist(i, (i + n).clamp(0, _data.length)));
+      }
+    } else {
+      // 新しい方から n 本ずつグループ化
+      for (var i = _data.length; i > 0; i -= n) {
+        rawChunks.add(_data.sublist((i - n).clamp(0, _data.length), i));
+      }
+      // タイムスタンプ昇順に戻す
+      rawChunks.sort(
+        (a, b) => a.first.openTimestamp.compareTo(b.first.openTimestamp),
+      );
+    }
+
+    // strict モードでは n 本に満たないチャンクを除外
+    final chunks = mode == MergeMode.strict
+        ? rawChunks.where((c) => c.length == n).toList()
+        : rawChunks;
+
+    final merged = chunks.map((chunk) {
+      return Ohlcv(
+        open: chunk.first.open,
+        high: chunk.map((e) => e.high).reduce((a, b) => a > b ? a : b),
+        low: chunk.map((e) => e.low).reduce((a, b) => a < b ? a : b),
+        close: chunk.last.close,
+        volume: chunk.fold(0, (sum, e) => sum + e.volume),
+        openTimestamp: chunk.first.openTimestamp,
+        closeTimestamp: chunk.last.closeTimestamp,
+      );
+    }).toList();
+
+    return OhlcvSeries(data: merged);
   }
 }

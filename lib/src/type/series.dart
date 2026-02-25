@@ -3,23 +3,18 @@ import 'package:finance_kline_core/src/enum/price_type.dart';
 
 abstract class Series {
   final Map<int, List<double?>> _ema;
-
-  MacdSeries? _macd;
-
-  RsiSeries? _rsi;
+  final Map<String, MacdSeries> _macdCache;
+  final Map<String, RsiSeries> _rsiCache;
 
   Series({
     Map<int, List<double?>>? ema,
-    MacdSeries? macd,
-    RsiSeries? rsi,
   })  : _ema = ema ?? <int, List<double?>>{},
-        _macd = macd,
-        _rsi = rsi;
+        _macdCache = {},
+        _rsiCache = {};
 
   DecList get closes;
   DecList get highs;
   DecList get lows;
-
   DecList get opens;
 
   /// 終値の指数移動平均（EMA）を計算します
@@ -44,12 +39,12 @@ abstract class Series {
     int signalPeriod = 9,
     PriceType priceType = PriceType.close,
   }) {
-    _macd ??= prices(priceType).macd(
+    final key = '$fastPeriod-$slowPeriod-$signalPeriod-${priceType.name}';
+    return _macdCache[key] ??= prices(priceType).macd(
       fastPeriod: fastPeriod,
       slowPeriod: slowPeriod,
       signalPeriod: signalPeriod,
     );
-    return _macd!;
   }
 
   DecList prices(PriceType type) => switch (type) {
@@ -66,7 +61,7 @@ abstract class Series {
     int period = 14,
     PriceType priceType = PriceType.close,
   }) {
-    _rsi ??= prices(priceType).rsi(period);
-    return _rsi!;
+    final key = '$period-${priceType.name}';
+    return _rsiCache[key] ??= prices(priceType).rsi(period);
   }
 }

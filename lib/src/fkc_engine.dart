@@ -13,17 +13,35 @@ class FKCEngine {
     _ohlcvSeriesMap[interval] = ohlcvSeries;
   }
 
-  /// baseIntervalの時間足のwrapperで分析する関数を渡して分析を行う
+  /// バーごとに [func] を呼び出し、結果のリストを返します
+  ///
+  /// [func] には「そのバーまでの全データ」を持つ [OhlcvSeriesWrapper] が渡されます。
+  /// これにより、各時点での指標値やシグナルを逐次計算できます。
+  ///
+  /// [start] 分析を開始するインデックス（指標のウォームアップ期間分を指定する）
+  ///
+  /// 注意: [func] 内で [OhlcvSeriesWrapper.jumpTo] を使うと、
+  /// そのタイムフレームのフルデータが返されます（スライスされません）。
   List<T> analyze<T>({
     required T Function(OhlcvSeriesWrapper wrapper) func,
     required int start,
   }) {
     final result = <T>[];
     final baseIntervalWrapper = select(baseInterval);
-    if (baseIntervalWrapper == null) {
-      return [];
+    if (baseIntervalWrapper == null) return [];
+
+    final totalLength = baseIntervalWrapper.ohlcvSeries.length;
+    for (var i = start; i < totalLength; i++) {
+      final slicedSeries = OhlcvSeries(
+        data: baseIntervalWrapper.ohlcvSeries.sublist(0, i + 1),
+      );
+      final wrapper = OhlcvSeriesWrapper(
+        interval: baseInterval,
+        ohlcvSeries: slicedSeries,
+        engine: this,
+      );
+      result.add(func(wrapper));
     }
-    for (var i = 0; i < baseIntervalWrapper.ohlcvSeries.length; i++) {}
     return result;
   }
 

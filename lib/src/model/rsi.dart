@@ -1,19 +1,9 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'rsi.freezed.dart';
-part 'rsi.g.dart';
-
 /// RSI（Relative Strength Index）の指標データ
-@freezed
-abstract class Rsi with _$Rsi {
-  factory Rsi({
-    /// RSI値（0〜100の範囲）
-    required double value,
-  }) = _Rsi;
+class Rsi {
+  /// RSI値（0〜100の範囲）
+  final double value;
 
-  factory Rsi.fromJson(Map<String, dynamic> json) => _$RsiFromJson(json);
-
-  const Rsi._();
+  const Rsi({required this.value});
 
   /// RSIが中立水準にあるかどうか（デフォルト: 30〜70の範囲）
   bool isNeutral({double lowerThreshold = 30, double upperThreshold = 70}) =>

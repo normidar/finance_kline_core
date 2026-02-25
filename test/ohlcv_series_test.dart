@@ -116,7 +116,7 @@ void main() {
     });
 
     test('空シリーズは空を返す', () {
-      expect(OhlcvSeries(data: []).merge(3).length, 0);
+      expect(OhlcvSeries(data: <Kline>[]).merge(3).length, 0);
     });
 
     test('n <= 0 で ArgumentError', () {
@@ -160,7 +160,7 @@ void main() {
   group('Series MACD キャッシュ', () {
     final data = List.generate(
       50,
-      (i) => Ohlcv(
+      (i) => Kline(
         open: 100,
         high: 105,
         low: 99,
@@ -188,7 +188,7 @@ void main() {
   group('Series EMA キャッシュ (priceType 別)', () {
     final data = List.generate(
       20,
-      (i) => Ohlcv(
+      (i) => Kline(
         open: 90.0 + i,
         high: 105.0 + i,
         low: 99.0 + i,
@@ -225,7 +225,7 @@ OhlcvSeries makeMinuteSeries(int count) {
   const minuteMs = 60000;
   final data = List.generate(
     count,
-    (i) => Ohlcv(
+    (i) => Kline(
       open: 100.0 + i,
       high: 105.0 + i,
       low: 99.0 + i,

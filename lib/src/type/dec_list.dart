@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:finance_kline_core/src/type/macd/macd.dart';
-import 'package:finance_kline_core/src/type/rsi/rsi.dart';
+import 'package:finance_kline_core/src/model/macd.dart';
+import 'package:finance_kline_core/src/model/rsi.dart';
 
 typedef DecList = List<double>;
 

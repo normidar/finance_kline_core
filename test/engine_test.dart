@@ -9,7 +9,7 @@ void main() {
 
       final series = OhlcvSeries(
         data: [
-          Ohlcv(
+          Kline(
             openTimestamp: 1000,
             closeTimestamp: 1100,
             open: 100,
@@ -18,7 +18,7 @@ void main() {
             close: 105,
             volume: 1000,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1100,
             closeTimestamp: 1200,
             open: 105,
@@ -42,7 +42,7 @@ void main() {
       final engine = FKCEngine(baseInterval: Interval.$1h);
       final series = OhlcvSeries(
         data: [
-          Ohlcv(
+          Kline(
             openTimestamp: 1000,
             closeTimestamp: 1100,
             open: 100,
@@ -71,7 +71,7 @@ void main() {
       final engine = FKCEngine(baseInterval: Interval.$1h);
       final series = OhlcvSeries(
         data: [
-          Ohlcv(
+          Kline(
             openTimestamp: 1000,
             closeTimestamp: 1100,
             open: 100,
@@ -80,7 +80,7 @@ void main() {
             close: 105,
             volume: 1000,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1100,
             closeTimestamp: 1200,
             open: 105,
@@ -89,7 +89,7 @@ void main() {
             close: 110,
             volume: 1200,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1200,
             closeTimestamp: 1300,
             open: 110,
@@ -117,7 +117,7 @@ void main() {
       final engine = FKCEngine(baseInterval: Interval.$1h);
       final series = OhlcvSeries(
         data: [
-          Ohlcv(
+          Kline(
             openTimestamp: 1000,
             closeTimestamp: 1100,
             open: 100,
@@ -126,7 +126,7 @@ void main() {
             close: 105,
             volume: 1000,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1100,
             closeTimestamp: 1200,
             open: 105,
@@ -135,7 +135,7 @@ void main() {
             close: 110,
             volume: 1200,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1200,
             closeTimestamp: 1300,
             open: 110,
@@ -165,7 +165,7 @@ void main() {
 
       final series1h = OhlcvSeries(
         data: [
-          Ohlcv(
+          Kline(
             openTimestamp: 1000,
             closeTimestamp: 1100,
             open: 100,
@@ -178,7 +178,7 @@ void main() {
       );
       final series4h = OhlcvSeries(
         data: [
-          Ohlcv(
+          Kline(
             openTimestamp: 1000,
             closeTimestamp: 1400,
             open: 100,
@@ -208,7 +208,7 @@ void main() {
 
       final series1h = OhlcvSeries(
         data: [
-          Ohlcv(
+          Kline(
             openTimestamp: 1000,
             closeTimestamp: 1100,
             open: 100,
@@ -217,7 +217,7 @@ void main() {
             close: 105,
             volume: 1000,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1100,
             closeTimestamp: 1200,
             open: 105,
@@ -226,7 +226,7 @@ void main() {
             close: 110,
             volume: 1200,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1200,
             closeTimestamp: 1300,
             open: 110,
@@ -240,7 +240,7 @@ void main() {
 
       final series4h = OhlcvSeries(
         data: [
-          Ohlcv(
+          Kline(
             openTimestamp: 1000,
             closeTimestamp: 1050,
             open: 100,
@@ -249,7 +249,7 @@ void main() {
             close: 102,
             volume: 500,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1050,
             closeTimestamp: 1150,
             open: 102,
@@ -258,7 +258,7 @@ void main() {
             close: 106,
             volume: 600,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1150,
             closeTimestamp: 1250,
             open: 106,
@@ -267,7 +267,7 @@ void main() {
             close: 111,
             volume: 700,
           ),
-          Ohlcv(
+          Kline(
             openTimestamp: 1250,
             closeTimestamp: 1350,
             open: 111,

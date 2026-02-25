@@ -1,5 +1,7 @@
-import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:finance_kline_core/src/enum/price_type.dart';
+import 'package:finance_kline_core/src/model/macd.dart';
+import 'package:finance_kline_core/src/model/rsi.dart';
+import 'package:finance_kline_core/src/type/dec_list.dart';
 
 abstract class Series {
   final Map<String, List<double?>> _ema;

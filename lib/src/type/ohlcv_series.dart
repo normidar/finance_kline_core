@@ -1,10 +1,10 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
 
 class OhlcvSeries extends Series {
-  final List<Ohlcv> _data;
+  final List<Kline> _data;
 
   OhlcvSeries({
-    required List<Ohlcv> data,
+    required List<Kline> data,
     super.ema,
   }) : _data = data;
 
@@ -25,10 +25,10 @@ class OhlcvSeries extends Series {
 
   DecList get volumes => _data.map((e) => e.volume).toList();
 
-  Ohlcv get first => _data.first;
-  Ohlcv get last => _data.last;
+  Kline get first => _data.first;
+  Kline get last => _data.last;
 
-  Ohlcv operator [](int index) => _data[index];
+  Kline operator [](int index) => _data[index];
 
   /// [closeTimestamp] 以前のローソク足だけを含む新しい [OhlcvSeries] を返します
   ///
@@ -39,7 +39,7 @@ class OhlcvSeries extends Series {
     return OhlcvSeries(data: filtered);
   }
 
-  List<Ohlcv> subByTimestamp({int? start, int? end}) {
+  List<Kline> subByTimestamp({int? start, int? end}) {
     if (_data.length < 2) throw UnsupportedError('data lenght must over 2');
     var endIndex = _data.length - 1;
     var startIndex = 0;
@@ -60,7 +60,7 @@ class OhlcvSeries extends Series {
     return _data.sublist(startIndex, endIndex);
   }
 
-  List<Ohlcv> sublist(int start, [int? end]) => _data.sublist(start, end);
+  List<Kline> sublist(int start, [int? end]) => _data.sublist(start, end);
 
   /// n本のローソク足を1本にマージして新しい [OhlcvSeries] を返します
   ///
@@ -87,7 +87,7 @@ class OhlcvSeries extends Series {
     if (_data.isEmpty) return OhlcvSeries(data: []);
     if (n == 1) return OhlcvSeries(data: List.of(_data));
 
-    final rawChunks = <List<Ohlcv>>[];
+    final rawChunks = <List<Kline>>[];
 
     if (alignment == MergeAlignment.left) {
       for (var i = 0; i < _data.length; i += n) {
@@ -107,7 +107,7 @@ class OhlcvSeries extends Series {
         : rawChunks;
 
     final merged = chunks.map((chunk) {
-      return Ohlcv(
+      return Kline(
         open: chunk.first.open,
         high: chunk.map((e) => e.high).reduce((a, b) => a > b ? a : b),
         low: chunk.map((e) => e.low).reduce((a, b) => a < b ? a : b),

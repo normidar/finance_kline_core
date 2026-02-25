@@ -1,5 +1,5 @@
+import 'package:finance_kline_core/src/model/macd.dart';
 import 'package:finance_kline_core/src/signal/interface.dart';
-import 'package:finance_kline_core/src/type/macd/macd.dart';
 
 /// MACDの計算結果を保持するシリーズ
 class MacdSeries extends SignalSeries {

@@ -129,7 +129,7 @@ void main() {
     test('calculateWithKline でも動作する', () {
       final ohlcvData = List.generate(
         30,
-        (i) => Ohlcv(
+        (i) => Kline(
           open: 100,
           high: 105,
           low: 99,
@@ -217,7 +217,7 @@ void main() {
       return OhlcvSeries(
         data: List.generate(
           count,
-          (i) => Ohlcv(
+          (i) => Kline(
             open: 100,
             high: 105,
             low: 99,
@@ -256,7 +256,7 @@ void main() {
       final minuteData = OhlcvSeries(
         data: List.generate(
           5,
-          (i) => Ohlcv(
+          (i) => Kline(
             open: 100,
             high: 105,
             low: 99,

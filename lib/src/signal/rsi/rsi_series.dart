@@ -1,6 +1,6 @@
+import 'package:finance_kline_core/src/model/rsi.dart';
 import 'package:finance_kline_core/src/signal/interface.dart';
 import 'package:finance_kline_core/src/signal/rsi/rsi_params.dart';
-import 'package:finance_kline_core/src/type/rsi/rsi.dart';
 
 /// RSIのシグナル状態
 enum RsiState {

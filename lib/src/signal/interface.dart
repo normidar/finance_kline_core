@@ -8,7 +8,7 @@ class LinearSignalSeries<T extends SignalUnit> extends SignalSeries {
 
   final List<T> units;
 
-  LinearSignalSeries<T> subByTimestamp({int? start, int? end}) {
+  (int, int) subByTimestamp({int? start, int? end}) {
     if (units.length < 2) throw UnsupportedError('data lenght must over 2');
     var endIndex = units.length - 1;
     var startIndex = 0;
@@ -26,7 +26,7 @@ class LinearSignalSeries<T extends SignalUnit> extends SignalSeries {
       final interval = units[1].openTimestamp - units[0].openTimestamp;
       startIndex = diff ~/ interval;
     }
-    return LinearSignalSeries<T>(units: units.sublist(startIndex, endIndex));
+    return (startIndex, endIndex);
   }
 
   @override

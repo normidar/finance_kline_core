@@ -13,35 +13,35 @@ void main() {
     final data = [10.0, 11.0, 12.0, 13.0, 14.0];
 
     test('先頭 period-1 個が null', () {
-      final result = data.ema(3);
+      final result = EmaLogic.compute(data, 3);
       expect(result[0], isNull);
       expect(result[1], isNull);
     });
 
     test('最初の非 null 値は SMA で初期化される', () {
-      expect(data.ema(3)[2], 11.0);
+      expect(EmaLogic.compute(data, 3)[2], 11.0);
     });
 
     test('後続の値が正しく計算される', () {
-      final result = data.ema(3);
+      final result = EmaLogic.compute(data, 3);
       expect(result[3], 12.0);
       expect(result[4], 13.0);
     });
 
     test('入力と同じ長さを返す', () {
-      expect(data.ema(3).length, data.length);
+      expect(EmaLogic.compute(data, 3).length, data.length);
     });
 
     test('period <= 0 で ArgumentError', () {
-      expect(() => data.ema(0), throwsArgumentError);
+      expect(() => EmaLogic.compute(data, 0), throwsArgumentError);
     });
 
     test('空リストは空を返す', () {
-      expect(<double>[].ema(3), isEmpty);
+      expect(EmaLogic.compute(<double>[], 3), isEmpty);
     });
 
     test('period と同じ長さのデータは 1 つだけ非 null', () {
-      final result = [1.0, 2.0, 3.0].ema(3);
+      final result = EmaLogic.compute([1.0, 2.0, 3.0], 3);
       expect(result.where((v) => v != null).length, 1);
     });
   });
@@ -79,21 +79,31 @@ void main() {
     final data = List.generate(50, (i) => 100.0 + i * 0.5);
 
     test('入力と同じ長さを返す', () {
-      expect(data.macd().length, data.length);
+      expect(MacdLogic.compute(data).length, data.length);
     });
 
     test('ウォームアップ期間は null', () {
       // fastPeriod=3, slowPeriod=6, signalPeriod=3
       // MACDライン確定: index 5 (slowPeriod-1)
       // シグナル確定:   index 5 + (signalPeriod-1) = 7
-      final result = data.macd(fastPeriod: 3, slowPeriod: 6, signalPeriod: 3);
+      final result = MacdLogic.compute(
+        data,
+        fastPeriod: 3,
+        slowPeriod: 6,
+        signalPeriod: 3,
+      );
       for (var i = 0; i < 7; i++) {
         expect(result[i], isNull, reason: 'index $i は null のはず');
       }
     });
 
     test('histogram = macdLine - signalLine', () {
-      final result = data.macd(fastPeriod: 3, slowPeriod: 6, signalPeriod: 3);
+      final result = MacdLogic.compute(
+        data,
+        fastPeriod: 3,
+        slowPeriod: 6,
+        signalPeriod: 3,
+      );
       for (final m in result) {
         if (m != null) {
           expect(
@@ -106,13 +116,13 @@ void main() {
 
     test('fastPeriod >= slowPeriod で ArgumentError', () {
       expect(
-        () => data.macd(fastPeriod: 26, slowPeriod: 12),
+        () => MacdLogic.compute(data, fastPeriod: 26, slowPeriod: 12),
         throwsArgumentError,
       );
     });
 
     test('空リストは空を返す', () {
-      expect(<double>[].macd(), isEmpty);
+      expect(MacdLogic.compute(<double>[]), isEmpty);
     });
   });
 
@@ -122,18 +132,18 @@ void main() {
     final data = List.generate(30, (i) => 100.0 + (i % 5 == 0 ? -2.0 : 1.0));
 
     test('入力と同じ長さを返す', () {
-      expect(data.rsi(14).length, data.length);
+      expect(RsiLogic.compute(data, 14).length, data.length);
     });
 
     test('先頭 period 個が null', () {
-      final result = data.rsi(14);
+      final result = RsiLogic.compute(data, 14);
       for (var i = 0; i < 14; i++) {
         expect(result[i], isNull, reason: 'index $i は null のはず');
       }
     });
 
     test('非 null 値は 0〜100 の範囲', () {
-      for (final r in data.rsi(14)) {
+      for (final r in RsiLogic.compute(data, 14)) {
         if (r != null) {
           expect(r.value, inInclusiveRange(0.0, 100.0));
         }
@@ -143,18 +153,19 @@ void main() {
     test('損失なしのデータは RSI が非常に高い（≥99）', () {
       // avgLoss=0 のとき実装は RS=100 を使うため RSI=100-100/101≈99.01
       final alwaysUp = List.generate(20, (i) => 100.0 + i.toDouble());
-      final firstNonNull = alwaysUp.rsi(5).whereType<Rsi>().first;
+      final firstNonNull = RsiLogic.compute(alwaysUp, 5).whereType<Rsi>().first;
       expect(firstNonNull.value, greaterThanOrEqualTo(99.0));
     });
 
     test('利益なしのデータは RSI=0', () {
       final alwaysDown = List.generate(20, (i) => 100.0 - i.toDouble());
-      final firstNonNull = alwaysDown.rsi(5).whereType<Rsi>().first;
+      final firstNonNull =
+          RsiLogic.compute(alwaysDown, 5).whereType<Rsi>().first;
       expect(firstNonNull.value, 0.0);
     });
 
     test('period <= 0 で ArgumentError', () {
-      expect(() => data.rsi(0), throwsArgumentError);
+      expect(() => RsiLogic.compute(data, 0), throwsArgumentError);
     });
   });
 

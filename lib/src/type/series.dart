@@ -1,6 +1,9 @@
 import 'package:finance_kline_core/src/enum/price_type.dart';
 import 'package:finance_kline_core/src/model/macd.dart';
 import 'package:finance_kline_core/src/model/rsi.dart';
+import 'package:finance_kline_core/src/signal/ema/ema_logic.dart';
+import 'package:finance_kline_core/src/signal/macd/macd_logic.dart';
+import 'package:finance_kline_core/src/signal/rsi/rsi_logic.dart';
 import 'package:finance_kline_core/src/type/dec_list.dart';
 
 abstract class Series {
@@ -28,7 +31,7 @@ abstract class Series {
     PriceType priceType = PriceType.close,
   }) {
     final key = '$period-${priceType.name}';
-    return _ema[key] ??= prices(priceType).ema(period);
+    return _ema[key] ??= EmaLogic.compute(prices(priceType), period);
   }
 
   /// MACD（Moving Average Convergence Divergence）を計算します
@@ -43,7 +46,8 @@ abstract class Series {
     PriceType priceType = PriceType.close,
   }) {
     final key = '$fastPeriod-$slowPeriod-$signalPeriod-${priceType.name}';
-    return _macdCache[key] ??= prices(priceType).macd(
+    return _macdCache[key] ??= MacdLogic.compute(
+      prices(priceType),
       fastPeriod: fastPeriod,
       slowPeriod: slowPeriod,
       signalPeriod: signalPeriod,
@@ -66,6 +70,6 @@ abstract class Series {
     PriceType priceType = PriceType.close,
   }) {
     final key = '$period-${priceType.name}';
-    return _rsiCache[key] ??= prices(priceType).rsi(period);
+    return _rsiCache[key] ??= RsiLogic.compute(prices(priceType), period);
   }
 }

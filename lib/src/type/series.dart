@@ -3,8 +3,8 @@ import 'package:finance_kline_core/src/enum/price_type.dart';
 
 abstract class Series {
   final Map<int, List<double?>> _ema;
-  final Map<String, MacdSeries> _macdCache;
-  final Map<String, RsiSeries> _rsiCache;
+  final Map<String, List<Macd?>> _macdCache;
+  final Map<String, List<Rsi?>> _rsiCache;
 
   Series({
     Map<int, List<double?>>? ema,
@@ -33,7 +33,7 @@ abstract class Series {
   /// [fastPeriod] 短期EMAの期間（デフォルト: 12）
   /// [slowPeriod] 長期EMAの期間（デフォルト: 26）
   /// [signalPeriod] シグナルラインのEMA期間（デフォルト: 9）
-  MacdSeries macd({
+  List<Macd?> macd({
     int fastPeriod = 12,
     int slowPeriod = 26,
     int signalPeriod = 9,
@@ -57,7 +57,7 @@ abstract class Series {
   /// RSI（Relative Strength Index）を計算します
   ///
   /// [period] 期間を指定します（デフォルト: 14）
-  RsiSeries rsi({
+  List<Rsi?> rsi({
     int period = 14,
     PriceType priceType = PriceType.close,
   }) {

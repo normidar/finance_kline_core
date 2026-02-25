@@ -3,9 +3,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'macd.freezed.dart';
 part 'macd.g.dart';
 
-/// MACD結果のシリーズ型
-typedef MacdSeries = List<Macd?>;
-
 /// MACD（Moving Average Convergence Divergence）の指標データ
 @freezed
 abstract class Macd with _$Macd {

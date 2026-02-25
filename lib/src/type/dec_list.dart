@@ -208,7 +208,7 @@ extension DecListX on DecList {
   /// ヒストグラム = MACDライン - シグナルライン
   ///
   /// データが不足している最初の部分はnullで埋められます
-  MacdSeries macd({
+  List<Macd?> macd({
     int fastPeriod = 12,
     int slowPeriod = 26,
     int signalPeriod = 9,
@@ -290,7 +290,7 @@ extension DecListX on DecList {
   /// 5. RSI = 100 - (100 / (1 + RS))
   ///
   /// データが不足している最初の部分はnullで埋められます
-  RsiSeries rsi(int period) {
+  List<Rsi?> rsi(int period) {
     if (period <= 0) {
       throw ArgumentError('Period must be greater than 0');
     }

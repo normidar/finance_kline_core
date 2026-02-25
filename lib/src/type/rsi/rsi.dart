@@ -3,9 +3,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'rsi.freezed.dart';
 part 'rsi.g.dart';
 
-/// RSI結果のシリーズ型
-typedef RsiSeries = List<Rsi?>;
-
 /// RSI（Relative Strength Index）の指標データ
 @freezed
 abstract class Rsi with _$Rsi {

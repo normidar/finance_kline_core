@@ -78,27 +78,31 @@ FKCEngine
 
 - 複数の時間足（1分・5分・1時間等）のデータを一元管理
 - `select(interval)` で任意の時間足のシリーズを取得
-- `analyze<T>()` は戦略計算のエントリーポイントとして設計（現在実装中）
+- `analyze<T>()` はバーごとに関数を呼び出して結果リストを返す
 
-### 6. シグナルアーキテクチャ（拡張中）
+### 6. シグナルアーキテクチャ
 
 ```
-SignalLogic (abstract)   ← 戦略の「計算ロジック」
-  └── (未実装)
+SignalLogic (abstract)      ← 戦略の「計算ロジック」
+  ├── EmaLogic              → EmaSignalSeries
+  ├── RsiLogic              → RsiSignalSeries
+  └── MacdLogic             → MacdSignalSeries
 
-SignalParams (abstract)  ← 戦略の「パラメータ」
-  └── EmaParams
+SignalParams (abstract)     ← 戦略の「パラメータ」
+  ├── EmaParams (periods: Set<int>)
+  ├── RsiParams (period, overbought, oversold)
+  └── MacdParams (fastPeriod, slowPeriod, signalPeriod)
 
-SignalSeries (abstract)  ← 戦略の「出力系列」
-  └── LinearSignalSeries<T extends SignalUnit>
+SignalSeries (abstract)     ← 戦略の「出力系列」
+  ├── EmaSignalSeries       (Map<period, List<double?>>)
+  ├── RsiSignalSeries       + stateOf() + RsiState enum
+  ├── MacdSignalSeries      + isBullishCross / isBearishCross
+  └── LinearSignalSeries<T> (タイムスタンプ付き汎用系列、未活用)
 ```
-
-- 将来的に「EMAクロス」「RSIオーバーソールド」などの戦略を `SignalLogic` として実装し、組み合わせて使う設計
-- `SignalUnit` を基底とすることで、あらゆる時刻付きデータをシグナル系列として扱える
 
 ---
 
-## 実装済みの機能
+## 実装状況
 
 | 機能 | 状態 |
 |---|---|
@@ -110,168 +114,173 @@ SignalSeries (abstract)  ← 戦略の「出力系列」
 | ピアソン相関係数 | 完成 |
 | OhlcvSeries（時刻スライス付き） | 完成 |
 | PipeList（文脈付き反復） | 完成 |
-| FKCEngine（多時間足管理） | 部分実装 |
-| K線マージ（時間足変換） | 削除済み・再実装待ち |
-| SignalLogic具体実装 | 未実装 |
+| Series MACDキャッシュバグ修正 | 完成 |
+| Series RSIキャッシュバグ修正 | 完成 |
+| K線マージ（OhlcvSeries.merge） | 完成 |
+| FKCEngine.analyze() | 完成 |
+| EmaLogic / EmaSignalSeries | 完成 |
+| RsiLogic / RsiParams / RsiSignalSeries | 完成 |
+| MacdLogic / MacdParams / MacdSignalSeries | 完成 |
+| Series EMAキャッシュのpriceType対応 | **バグあり・未修正** |
+| OhlcvSeriesWrapper.analyze() | 未実装 |
+| FKCEngine マージ連携 | 未実装 |
+| MTF analyze内でのjumpToスライス対応 | 未実装 |
+| LinearSignalSeries の活用 | 未実装 |
 | テスト | 未実装 |
+| READMEの整合性修正 | 未実装 |
 
 ---
 
-## 現在の課題と未来の方向性
+## 残っている課題
 
-### 解決すべき問題
+### バグ: Series._emaのキャッシュキーにpriceTypeが含まれていない
 
-1. **K線マージロジックの消失**: `KlineSeries` クラス削除時にマージ機能も失われた。`MergeAlignment` / `MergeMode` のenumは残っているが、実装がない。再設計が必要。
-
-2. **FKCEngine.analyze() の未完成**: ループ本体が空。シグナル計算のオーケストレーション設計が必要。
-
-3. **Series のキャッシュ設計の不完全さ**: MACD・RSIは単一インスタンスしかキャッシュされず、パラメータを変えて呼ぶと最初の結果が返る（バグ相当）。
-
-4. **SignalLogic の未実装**: 戦略パターンの骨格だけあり、具体的な実装がない。
-
-### 目指す姿
+`series.dart` の `_ema` は `Map<int, List<double?>>` でキャッシュしているが、
+キーが `period` だけで `priceType` が含まれていない。
 
 ```dart
-// こういう記述で戦略を表現できるようにする
-final result = engine
-  .select(Interval.$1h)
-  .analyze(EmaCrossStrategy(fast: 12, slow: 26));
+// 現状: period だけでキャッシュ → priceType が違っても同じ結果が返る（バグ）
+_ema[period] ??= prices(priceType).ema(period);
+
+// 正しくは MACD/RSI と同様にキーに priceType を含める
+final key = '$period-${priceType.name}';
+_ema[key] ??= prices(priceType).ema(period);
 ```
 
-- 戦略を関数・クラスとして定義し、時間足・データ範囲を指定して実行
-- 複数時間足にまたがるシグナル（MTF分析）をサポート
-- バックテストへの応用も視野に入れる
+MACDとRSIは修正済みだが、EMAのみ残っている。
 
 ---
 
-## TODO — 目標達成までのロードマップ
+### 未実装: OhlcvSeriesWrapper.analyze()
 
-目標「`engine.select(interval).analyze(MyStrategy())`」を実現するために、
-何が足りないかを層ごとに整理する。
+目指す記法 `engine.select(interval).analyze(...)` のために必要。
+現在は `FKCEngine.analyze()` でのみ実行でき、`OhlcvSeriesWrapper` には `analyze()` がない。
 
----
+```dart
+// 現状: FKCEngineに直接書く必要がある
+engine.analyze<bool>(start: 26, func: (w) => ...);
 
-### P0: 今すぐ直すべきバグ
+// 目標: selectしてからanalyzeできる
+engine.select(Interval.$1h).analyze(start: 26, func: (w) => ...);
+```
 
-- [ ] **`Series` のキャッシュバグを修正する**
-  - `_macd` と `_rsi` は単一インスタンスしかキャッシュしない設計
-  - 異なるパラメータで呼ぶと最初の結果が返る（バグ）
-  - EMAと同様に `Map<String, T>` でキャッシュキーをパラメータから生成する
-
----
-
-### P1: データ基盤の復元（これがないと多時間足が機能しない）
-
-- [ ] **K線マージ機能を `OhlcvSeries` に再実装する**
-  - `KlineSeries` 削除時に機能が消えたが `MergeAlignment` / `MergeMode` のenumは残存
-  - `OhlcvSeries.merge(int n, {MergeAlignment, MergeMode})` → `OhlcvSeries` として設計
-  - ルール: `open=最初`, `high=最大`, `low=最小`, `close=最後`, `volume=合計`
-  - `MergeAlignment.left` / `right` と `MergeMode.strict` / `partial` の4通りを実装
-
-- [ ] **`FKCEngine` へのマージ連携を設計する**
-  - `addOhlcvSeries` 時に `baseInterval` より大きい時間足は自動マージで生成するか、
-    手動登録のみにするかを決める
-  - `Interval.duration` を使った整合性チェック（例: 1分足から5分足を作れるか判定）
+`OhlcvSeriesWrapper` に `analyze<T>()` を追加するか、
+`FKCEngine.analyze()` の `baseInterval` 縛りをなくして任意の時間足で実行できるようにする設計が必要。
 
 ---
 
-### P2: SignalLogic インターフェースの再設計（戦略が書けない根本問題）
+### 未実装: FKCEngine へのマージ連携
 
-現在の `SignalLogic.compute(List<double> data, SignalParams params)` は **単一の数値列** しか受け取れない。
-MACDクロス・RSI+EMAの複合判定など、実用的な戦略は **`OhlcvSeries` 全体** を必要とする。
+`addOhlcvSeries` 時に、`baseInterval` から上位時間足を自動マージ生成するかを決めていない。
+現在は各時間足のデータを手動で別々に登録する方式のみ。
 
-- [ ] **`SignalLogic` の入力を `OhlcvSeries` に変更する（または多入力対応にする）**
-  ```dart
-  // 現状（限定的）
-  SignalSeries compute(List<double> data, SignalParams params);
-
-  // 目標（戦略が自由にSeriesを参照できる）
-  SignalSeries compute(OhlcvSeries series, SignalParams params);
-  ```
-
-- [ ] **`SignalLogic` の出力型を明確化する**
-  - `LinearSignalSeries<T extends SignalUnit>` を返すのか
-  - `List<bool?>` のような単純なシグナル列を返すのか
-  - バーごとの「エントリー/エグジット/ホールド」を表す enum を返すのか
-  - → 設計決定が必要
-
-- [ ] **`EmaParams` に対応する具体的な `SignalLogic` を1つ実装する（動作実証）**
-  - `EmaLogic implements SignalLogic` として最初の具体実装を作る
-  - これにより `SignalLogic` の設計が正しいか検証できる
+選択肢:
+1. 手動登録のみ（現状維持）→ シンプルだが利便性が低い
+2. `addOhlcvSeries` 時に上位時間足を自動生成 → 利便性は高いが `Interval` の倍数整合性チェックが必要
 
 ---
 
-### P3: FKCEngine.analyze() の完成（戦略実行のオーケストレーション）
+### 未実装: MTF analyze内でのjumpToスライス
 
-- [ ] **`analyze<T>()` の型パラメータの意味を確定させる**
-  - `T` は `SignalSeries`? `SignalUnit`? 戻り値の型?
-  - ループ本体が空のまま — 設計を決めて実装する
+`FKCEngine.analyze()` ループ内で `wrapper.jumpTo(otherInterval)` を呼ぶと、
+そのタイムフレームの**フルデータ**が返る（スライスされない）。
 
-- [ ] **`OhlcvSeriesWrapper.analyze()` として委譲できるようにする**
-  ```dart
-  // 目標の記法
-  final signals = engine
-    .select(Interval.$1h)
-    .analyze(EmaCrossLogic(EmaParams(periods: {12, 26})));
-  ```
-  - `OhlcvSeriesWrapper` が `SignalLogic` を受け取り、内部の `OhlcvSeries` を渡して実行
-
-- [ ] **複数時間足にまたがる戦略のアクセスパターンを設計する**
-  - `OhlcvSeriesWrapper.jumpTo(interval)` で別時間足に切り替えられるが、
-    戦略の中でどう使うか（例: 日足トレンド確認 → 1時間足でエントリー）のAPIを決める
+本来、MTF分析では「baseIntervalのバーiに対応する時刻までの他時間足データ」が必要。
+現状は `jumpTo` がエンジンの `select()` を呼ぶだけで時刻フィルタが行われない。
 
 ---
 
-### P4: 戦略の具体実装（ライブラリとしての価値証明）
+### 未実装: LinearSignalSeries の活用
 
-最低限の実用的な戦略を実装し、パッケージの使い勝手を検証する。
+`LinearSignalSeries<T extends SignalUnit>` はタイムスタンプ付きの汎用シリーズとして設計されているが、
+`EmaSignalSeries` / `RsiSignalSeries` / `MacdSignalSeries` はいずれもインデックスベースで実装されており、
+`LinearSignalSeries` を使っていない。
 
-- [ ] **EMAクロス戦略** (`EmaCrossLogic`): fast EMA が slow EMA を上抜け/下抜けで売買シグナル
-- [ ] **RSI戦略** (`RsiLogic`): 閾値超え/割れでオーバーソールド/オーバーボートシグナル
-- [ ] **MACDシグナルクロス** (`MacdCrossLogic`): MACDラインがシグナルラインをクロス
-
-これらを実装することで、戦略コンポーネントの設計が実用的かどうか検証できる。
-
----
-
-### P5: テスト（publishできる品質にする）
-
-現在テストが一切ない。指標計算の正確性はパッケージの信頼性の根幹。
-
-- [ ] **指標計算のユニットテスト**
-  - EMA: 既知の入力に対して既知の出力を検証（TradingViewの値と照合）
-  - SMA: 同上
-  - MACD: `macdLine`, `signalLine`, `histogram` の各値
-  - RSI: Wilder's smoothing の精度検証
-  - 線形回帰: `slope`, `intercept`, `rSquared` の数値検証
-
-- [ ] **エッジケースのテスト**
-  - 空のリスト、`period` より短いデータ、全て同じ値のデータ
-  - `rsi` で `avgLoss == 0` のケース（RS = 100）
-
-- [ ] **K線マージのテスト**
-  - 4通りの `MergeAlignment` × `MergeMode` の組み合わせ
-  - タイムスタンプの整合性（`openTimestamp` / `closeTimestamp`）
-
-- [ ] **`OhlcvSeries` のキャッシュ正確性テスト**
-  - 同じパラメータで2回呼んで同一インスタンスが返るか
-  - 異なるパラメータで別の結果が返るか（キャッシュバグ修正後）
+将来的にシグナル結果に時刻情報を付与したい場合に活用するか、
+あるいは不要と判断して削除するかを決める必要がある。
 
 ---
 
-### P6: ドキュメントの整合性修正
+### 未実装: EMAクロス検出
 
-- [ ] **README.md を現在の実装に合わせて更新する**
-  - `merge` / `predictNext` / `toOhlcvSeries` などの削除済みAPIへの言及を削除
-  - `OhlcvSeries` / `FKCEngine` / `PipeList` の実際の使い方を追記
+`EmaSignalSeries` はEMAの値列を持つが、
+「fast EMA が slow EMA を上抜けた」というクロス判定のヘルパーがない。
+`MacdSignalSeries.isBullishCross` / `isBearishCross` と同様のAPIが必要。
 
-- [ ] **README_ja.md のTODOを整理する**
-  - 完了済みの `[ ]` を `[x]` に更新
-  - 新しい設計方針を反映
+```dart
+// EmaSignalSeriesに追加したいAPI
+bool isBullishCross({required int fast, required int slow});
+bool isBearishCross({required int fast, required int slow});
+```
 
 ---
 
-### P7: 将来の発展（中長期）
+### 未実装: テスト
+
+テストファイルが一切ない。publishできる品質にするために必須。
+
+| テスト対象 | 内容 |
+|---|---|
+| 指標計算の数値精度 | EMA/SMA/MACD/RSI/線形回帰をTradingViewの値と照合 |
+| エッジケース | 空リスト・データ不足・全同値・avgLoss=0 |
+| K線マージ4通り | left+strict / left+partial / right+strict / right+partial |
+| Seriesキャッシュ正確性 | 同パラメータで同インスタンス、異パラメータで別結果 |
+| SignalLogic | EmaLogic / RsiLogic / MacdLogic の出力検証 |
+
+---
+
+### 未実装: READMEの整合性修正
+
+README.md が削除済みAPIを参照している:
+- `merge` / `predictNext` / `toOhlcvSeries` (KlineSeries削除時に消えた)
+- `OhlcvSeries.merge()` / `FKCEngine.analyze()` / SignalLogic群の使い方が未記載
+
+---
+
+## TODO — 残りのロードマップ
+
+### 今すぐ直すべきバグ
+
+- [ ] **Series._emaのキャッシュキーに `priceType` を追加する**
+  - `Map<int, List<double?>>` → `Map<String, List<double?>>` に変更
+  - キー: `'$period-${priceType.name}'`
+
+---
+
+### 近い将来（v1.0.0 に向けて）
+
+- [ ] **`OhlcvSeriesWrapper.analyze()` を追加する**
+  - `engine.select(interval).analyze(start:, func:)` という記法を実現する
+
+- [ ] **`EmaSignalSeries` にクロス検出を追加する**
+  - `isBullishCross({required int fast, required int slow}) → bool`
+  - `isBearishCross({required int fast, required int slow}) → bool`
+
+- [ ] **テストを書く（P5）**
+  - `test/dec_list_test.dart` — 指標計算の数値精度
+  - `test/ohlcv_series_test.dart` — merge・キャッシュ
+  - `test/signal_logic_test.dart` — SignalLogic群
+
+- [ ] **README.md を現在の実装に合わせて更新する（P6）**
+
+---
+
+### 設計判断が必要なもの
+
+- [ ] **FKCEngine マージ連携の方針を決める**
+  - 手動登録のみ継続か、上位時間足の自動生成を追加するか
+
+- [ ] **MTF analyze での jumpTo スライス対応**
+  - `analyze` ループ内の `jumpTo` が時刻対応したスライスを返すように改修するか
+  - `OhlcvSeries.subByTimestamp` を活用する方向が現実的
+
+- [ ] **`LinearSignalSeries` の活用か削除かを決める**
+  - タイムスタンプ付きシグナルが必要になったら活用
+  - 不要なら除去してコードをシンプルに保つ
+
+---
+
+### 将来の発展（中長期）
 
 - [ ] **戦略の合成演算子**
   ```dart
@@ -289,26 +298,22 @@ MACDクロス・RSI+EMAの複合判定など、実用的な戦略は **`OhlcvSer
 
 ---
 
-### 実装の優先順序まとめ
+### 優先順序まとめ
 
 ```
-P0 キャッシュバグ修正
+[バグ] Series._emaキャッシュキー修正
   ↓
-P1 K線マージ復元
+OhlcvSeriesWrapper.analyze() 追加
   ↓
-P2 SignalLogicインターフェース再設計
+EmaSignalSeriesにクロス検出追加
   ↓
-P3 FKCEngine.analyze() 完成
+テスト追加（指標精度 → merge → SignalLogic）
   ↓
-P4 具体的な戦略を3つ実装（EMAクロス・RSI・MACD）
+README更新
   ↓
-P5 テスト追加
+v1.0.0 pub.dev公開
   ↓
-P6 ドキュメント整合性修正
-  ↓
-v1.0.0 としてpub.devに公開
-  ↓
-P7 戦略合成・バックテスト・ストリーミング（将来）
+FKCEngine自動マージ / MTFスライス / 戦略合成（将来）
 ```
 
 ---

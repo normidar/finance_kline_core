@@ -1,26 +1,6 @@
 import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:test/test.dart';
 
-/// タイムスタンプ付きの OhlcvSeries を生成するヘルパー
-///
-/// バー n 本: closeTimestamp は 1分ずつ増加
-OhlcvSeries makeMinuteSeries(int count) {
-  const minuteMs = 60000;
-  final data = List.generate(
-    count,
-    (i) => Ohlcv(
-      open: 100.0 + i,
-      high: 105.0 + i,
-      low: 99.0 + i,
-      close: 102.0 + i,
-      volume: 1000.0,
-      openTimestamp: i * minuteMs,
-      closeTimestamp: (i + 1) * minuteMs - 1,
-    ),
-  );
-  return OhlcvSeries(data: data);
-}
-
 void main() {
   // ─── merge: left + strict ──────────────────────────────────────────────────
 
@@ -108,18 +88,21 @@ void main() {
 
     test('端数チャンクも含まれる', () {
       expect(
-        s.merge(2, alignment: MergeAlignment.right, mode: MergeMode.partial)
+        s
+            .merge(2, alignment: MergeAlignment.right, mode: MergeMode.partial)
             .length,
         3,
       );
     });
 
     test('先頭チャンクが端数（1本）', () {
-      final first = s.merge(
-        2,
-        alignment: MergeAlignment.right,
-        mode: MergeMode.partial,
-      ).first;
+      final first = s
+          .merge(
+            2,
+            alignment: MergeAlignment.right,
+            mode: MergeMode.partial,
+          )
+          .first;
       expect(first.open, 100.0);
       expect(first.close, 102.0);
     });
@@ -155,7 +138,8 @@ void main() {
   // ─── subUpToTimestamp ────────────────────────────────────────────────────
 
   group('subUpToTimestamp', () {
-    final s = makeMinuteSeries(5); // closeTimestamps: 59999, 119999, 179999, ...
+    final s =
+        makeMinuteSeries(5); // closeTimestamps: 59999, 119999, 179999, ...
 
     test('指定以前のバーのみ返す', () {
       final result = s.subUpToTimestamp(119999); // index 0, 1
@@ -177,11 +161,11 @@ void main() {
     final data = List.generate(
       50,
       (i) => Ohlcv(
-        open: 100.0,
-        high: 105.0,
-        low: 99.0,
+        open: 100,
+        high: 105,
+        low: 99,
         close: 100.0 + i * 0.5,
-        volume: 1000.0,
+        volume: 1000,
         openTimestamp: i * 60000,
         closeTimestamp: (i + 1) * 60000 - 1,
       ),
@@ -209,7 +193,7 @@ void main() {
         high: 105.0 + i,
         low: 99.0 + i,
         close: 100.0 + i,
-        volume: 1000.0,
+        volume: 1000,
         openTimestamp: i * 60000,
         closeTimestamp: (i + 1) * 60000 - 1,
       ),
@@ -217,7 +201,7 @@ void main() {
     final series = OhlcvSeries(data: data);
 
     test('period が同じでも priceType が違えば別の結果', () {
-      final closeEma = series.ema(period: 5, priceType: PriceType.close);
+      final closeEma = series.ema(period: 5);
       final highEma = series.ema(period: 5, priceType: PriceType.high);
       expect(identical(closeEma, highEma), isFalse);
       // close と high の値は異なるはずなので末尾の非 null を比較
@@ -227,9 +211,29 @@ void main() {
     });
 
     test('同じ priceType の再呼び出しはキャッシュ済みインスタンスを返す', () {
-      final a = series.ema(period: 5, priceType: PriceType.close);
-      final b = series.ema(period: 5, priceType: PriceType.close);
+      final a = series.ema(period: 5);
+      final b = series.ema(period: 5);
       expect(identical(a, b), isTrue);
     });
   });
+}
+
+/// タイムスタンプ付きの OhlcvSeries を生成するヘルパー
+///
+/// バー n 本: closeTimestamp は 1分ずつ増加
+OhlcvSeries makeMinuteSeries(int count) {
+  const minuteMs = 60000;
+  final data = List.generate(
+    count,
+    (i) => Ohlcv(
+      open: 100.0 + i,
+      high: 105.0 + i,
+      low: 99.0 + i,
+      close: 102.0 + i,
+      volume: 1000,
+      openTimestamp: i * minuteMs,
+      closeTimestamp: (i + 1) * minuteMs - 1,
+    ),
+  );
+  return OhlcvSeries(data: data);
 }

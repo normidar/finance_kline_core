@@ -176,7 +176,7 @@ void main() {
 
     test('predict が正しい値を返す', () {
       final fit = [0.0, 2.0, 4.0, 6.0, 8.0].linearFit();
-      expect(fit.predict(5.0), closeTo(10.0, 1e-10));
+      expect(fit.predict(5), closeTo(10.0, 1e-10));
     });
 
     test('全て同じ値は R²=1.0', () {

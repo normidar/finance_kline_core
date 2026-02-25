@@ -21,7 +21,7 @@ void main() {
       final result = EmaLogic().calculate(
         params: EmaParams(periods: {12, 26}),
         data: closes,
-      ) as EmaSeries;
+      );
       expect(result[12], hasLength(closes.length));
       expect(result[26], hasLength(closes.length));
     });
@@ -30,7 +30,7 @@ void main() {
       final result = EmaLogic().calculate(
         params: EmaParams(periods: {5}),
         data: closes,
-      ) as EmaSeries;
+      );
       expect(result[99], isEmpty);
     });
   });
@@ -102,24 +102,22 @@ void main() {
   group('RsiLogic', () {
     test('RsiSeries を返す', () {
       expect(
-        RsiLogic().calculate(params: RsiParams(period: 14), data: closes),
+        RsiLogic().calculate(params: RsiParams(), data: closes),
         isA<RsiSeries>(),
       );
     });
 
     test('上昇トレンドで overbought になる', () {
       final alwaysUp = List.generate(30, (i) => 100.0 + i.toDouble());
-      final params = RsiParams(period: 5, overbought: 70);
-      final result =
-          RsiLogic().calculate(params: params, data: alwaysUp) as RsiSeries;
+      final params = RsiParams(period: 5);
+      final result = RsiLogic().calculate(params: params, data: alwaysUp);
       expect(result.stateOf(params), RsiState.overbought);
     });
 
     test('下降トレンドで oversold になる', () {
       final alwaysDown = List.generate(30, (i) => 100.0 - i.toDouble());
-      final params = RsiParams(period: 5, oversold: 30);
-      final result =
-          RsiLogic().calculate(params: params, data: alwaysDown) as RsiSeries;
+      final params = RsiParams(period: 5);
+      final result = RsiLogic().calculate(params: params, data: alwaysDown);
       expect(result.stateOf(params), RsiState.oversold);
     });
 
@@ -132,11 +130,11 @@ void main() {
       final ohlcvData = List.generate(
         30,
         (i) => Ohlcv(
-          open: 100.0,
-          high: 105.0,
-          low: 99.0,
+          open: 100,
+          high: 105,
+          low: 99,
           close: 100.0 + i * 0.5,
-          volume: 1000.0,
+          volume: 1000,
           openTimestamp: i * 60000,
           closeTimestamp: (i + 1) * 60000 - 1,
         ),
@@ -145,7 +143,7 @@ void main() {
       final result = RsiLogic().calculateWithKline(
         klineSeries: series,
         priceType: PriceType.close,
-        params: RsiParams(period: 14),
+        params: RsiParams(),
       );
       expect(result, isA<RsiSeries>());
     });
@@ -165,7 +163,7 @@ void main() {
       final result = MacdLogic().calculate(
         params: MacdParams(fastPeriod: 3, slowPeriod: 6, signalPeriod: 3),
         data: closes,
-      ) as MacdSeries;
+      );
       for (final m in result.data) {
         if (m != null) {
           expect(m.histogram, closeTo(m.macdLine - m.signalLine, 1e-10));
@@ -177,7 +175,7 @@ void main() {
       final result = MacdLogic().calculate(
         params: MacdParams(fastPeriod: 3, slowPeriod: 6, signalPeriod: 3),
         data: closes,
-      ) as MacdSeries;
+      );
       expect(result.isBullishCross, isA<bool>());
       expect(result.isBearishCross, isA<bool>());
     });
@@ -192,8 +190,8 @@ void main() {
       // prev: macdLine=-1, signalLine=0 → curr: macdLine=1, signalLine=0
       final result = MacdSeries(
         data: [
-          Macd(macdLine: -1.0, signalLine: 0.0, histogram: -1.0),
-          Macd(macdLine: 1.0, signalLine: 0.0, histogram: 1.0),
+          Macd(macdLine: -1, signalLine: 0, histogram: -1),
+          Macd(macdLine: 1, signalLine: 0, histogram: 1),
         ],
       );
       expect(result.isBullishCross, isTrue);
@@ -203,8 +201,8 @@ void main() {
     test('デッドクロスを検出する', () {
       final result = MacdSeries(
         data: [
-          Macd(macdLine: 1.0, signalLine: 0.0, histogram: 1.0),
-          Macd(macdLine: -1.0, signalLine: 0.0, histogram: -1.0),
+          Macd(macdLine: 1, signalLine: 0, histogram: 1),
+          Macd(macdLine: -1, signalLine: 0, histogram: -1),
         ],
       );
       expect(result.isBearishCross, isTrue);
@@ -220,11 +218,11 @@ void main() {
         data: List.generate(
           count,
           (i) => Ohlcv(
-            open: 100.0,
-            high: 105.0,
-            low: 99.0,
+            open: 100,
+            high: 105,
+            low: 99,
             close: 100.0 + i * 0.5,
-            volume: 1000.0,
+            volume: 1000,
             openTimestamp: i * 60000,
             closeTimestamp: (i + 1) * 60000 - 1,
           ),
@@ -259,11 +257,11 @@ void main() {
         data: List.generate(
           5,
           (i) => Ohlcv(
-            open: 100.0,
-            high: 105.0,
-            low: 99.0,
+            open: 100,
+            high: 105,
+            low: 99,
             close: 100.0 + i.toDouble(),
-            volume: 1000.0,
+            volume: 1000,
             openTimestamp: i * 60000,
             closeTimestamp: (i + 1) * 60000 - 1,
           ),
@@ -272,7 +270,6 @@ void main() {
       // 5分足 = 1分足5本をマージ
       final fiveMinData = minuteData.merge(
         5,
-        alignment: MergeAlignment.left,
         mode: MergeMode.partial,
       );
 

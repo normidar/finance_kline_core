@@ -1,4 +1,3 @@
-import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'ohlcv.freezed.dart';
@@ -34,7 +33,6 @@ abstract class Ohlcv with _$Ohlcv {
         return volume;
     }
   }
-
 }
 
 enum OhlcvType {

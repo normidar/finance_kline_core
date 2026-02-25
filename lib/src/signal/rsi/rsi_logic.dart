@@ -6,14 +6,14 @@ import 'package:finance_kline_core/src/signal/rsi/rsi_series.dart';
 /// [RsiParams] に基づいてRSIを計算する [SignalLogic]
 ///
 /// ```dart
-/// final params = RsiParams(period: 14);
+/// final params = RsiParams(periods: {14, 21});
 /// final logic = RsiLogic();
 /// final result = logic.calculate(
 ///   params: params,
 ///   data: closes,
 /// ) as RsiSeries;
 ///
-/// if (result.stateOf(params) == RsiState.oversold) {
+/// if (result.stateOf(14) == RsiState.oversold) {
 ///   // 売られすぎ → 買いシグナル
 /// }
 /// ```
@@ -90,6 +90,10 @@ class RsiLogic extends SignalLogic {
     required List<double> data,
   }) {
     final rsiParams = params as RsiParams;
-    return RsiSeries(data: compute(data, rsiParams.period));
+    return RsiSeries(
+      values: {
+        for (final period in rsiParams.periods) period: compute(data, period),
+      },
+    );
   }
 }

@@ -3,6 +3,7 @@ analyzer:
   errors:
     flutter_style_todos: ignore
     invalid_annotation_target: ignore
+    omit_local_variable_types: ignore
     one_member_abstracts: ignore
     public_member_api_docs: ignore
     sort_constructors_first: ignore

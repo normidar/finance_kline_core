@@ -50,65 +50,78 @@ void main() {
 }
 
 Map<String, dynamic> analyzeFunction(MultiIntervalWrapper wrapper) {
+  const interval = Interval.$1h;
   return {
     'macd_bullish_cross':
-        wrapper.compactSeriesMap[Interval.$5m]?.macd.isBullishCross,
+        wrapper.compactSeriesMap[interval]?.macd.isBullishCross,
     'macd_bearish_cross':
-        wrapper.compactSeriesMap[Interval.$5m]?.macd.isBearishCross,
+        wrapper.compactSeriesMap[interval]?.macd.isBearishCross,
     'timestamp':
-        wrapper.compactSeriesMap[Interval.$5m]?.kline.units.last.closeTimestamp,
-    'price': wrapper.compactSeriesMap[Interval.$5m]?.kline.units.last.close,
+        wrapper.compactSeriesMap[interval]?.kline.units.last.closeTimestamp,
+    'price': wrapper.compactSeriesMap[interval]?.kline.units.last.close,
   };
 }
 
 void analyzeProfit(List<Map<String, dynamic>> results) {
-  double cash = 1000.0;
-  double holdings = 0.0;
-  double buyPrice = 0.0;
+  const double stopLossRate = 0.08; // 8% 損切りライン
+
+  double cash = 1000;
+  double holdings = 0;
+  double buyPrice = 0;
 
   int wins = 0;
   int losses = 0;
+  int stopLossCount = 0;
   double maxProfit = double.negativeInfinity;
   double maxLoss = double.infinity;
+
+  void closeTrade(double price, String reason) {
+    cash = holdings * price;
+    holdings = 0.0;
+    final pnlPct = (price - buyPrice) / buyPrice * 100;
+    if (pnlPct >= 0) {
+      wins++;
+      if (pnlPct > maxProfit) maxProfit = pnlPct;
+    } else {
+      losses++;
+      if (pnlPct < maxLoss) maxLoss = pnlPct;
+    }
+    print(
+      '$reason @ $price  cash=\$${cash.toStringAsFixed(2)}  pnl=${pnlPct.toStringAsFixed(2)}%',
+    );
+  }
 
   for (final r in results) {
     final price = (r['price'] as num?)?.toDouble();
     if (price == null || price <= 0) continue;
 
+    // 損切り判定 (ポジション保有中のみ)
+    if (holdings > 0 && price <= buyPrice * (1 - stopLossRate)) {
+      stopLossCount++;
+      closeTrade(price, 'STOP ');
+    }
+
     if (r['macd_bullish_cross'] == true && cash > 0) {
       buyPrice = price;
       holdings = cash / price;
       cash = 0.0;
-      print('BUY  @ $price  holdings=${holdings.toStringAsFixed(6)}');
     } else if (r['macd_bearish_cross'] == true && holdings > 0) {
-      cash = holdings * price;
-      holdings = 0.0;
-
-      final pnlAlt = price - buyPrice; // 1単位あたりの損益
-      if (pnlAlt >= 0) {
-        wins++;
-        if (pnlAlt > maxProfit) maxProfit = pnlAlt;
-      } else {
-        losses++;
-        if (pnlAlt < maxLoss) maxLoss = pnlAlt;
-      }
-
-      print('SELL @ $price  cash=\$${cash.toStringAsFixed(2)}  pnl/unit=${pnlAlt.toStringAsFixed(4)}');
+      closeTrade(price, 'SELL ');
     }
   }
 
   // 未決済ポジションがあれば最終価格で評価
   final lastPrice = (results.last['price'] as num?)?.toDouble() ?? 0.0;
   if (holdings > 0) {
-    final pnlAlt = lastPrice - buyPrice;
-    if (pnlAlt >= 0) {
+    final pnlPct = (lastPrice - buyPrice) / buyPrice * 100;
+    if (pnlPct >= 0) {
       wins++;
-      if (pnlAlt > maxProfit) maxProfit = pnlAlt;
+      if (pnlPct > maxProfit) maxProfit = pnlPct;
     } else {
       losses++;
-      if (pnlAlt < maxLoss) maxLoss = pnlAlt;
+      if (pnlPct < maxLoss) maxLoss = pnlPct;
     }
-    print('OPEN @ $lastPrice (未決済評価)  pnl/unit=${pnlAlt.toStringAsFixed(4)}');
+    print('OPEN @ $lastPrice (未決済評価)  pnl=${pnlPct.toStringAsFixed(2)}%');
   }
 
   final finalValue = cash + holdings * lastPrice;
@@ -118,13 +131,21 @@ void analyzeProfit(List<Map<String, dynamic>> results) {
 
   print('');
   print('=== 統計 ===');
+  print('損切りライン       : ${(stopLossRate * 100).toStringAsFixed(0)}%');
   print('総トレード数       : $totalTrades');
   print('勝ち               : $wins  (${winRate.toStringAsFixed(1)}%)');
   print('負け               : $losses  (${lossRate.toStringAsFixed(1)}%)');
-  print('最大利益 (1単位)   : ${maxProfit == double.negativeInfinity ? "N/A" : "\$${maxProfit.toStringAsFixed(4)}"}');
-  print('最大損失 (1単位)   : ${maxLoss == double.infinity ? "N/A" : "\$${maxLoss.toStringAsFixed(4)}"}');
+  print('  うち損切り       : $stopLossCount');
+  print(
+    '最大利益           : ${maxProfit == double.negativeInfinity ? "N/A" : "${maxProfit.toStringAsFixed(2)}%"}',
+  );
+  print(
+    '最大損失           : ${maxLoss == double.infinity ? "N/A" : "${maxLoss.toStringAsFixed(2)}%"}',
+  );
   print('最終資産           : \$${finalValue.toStringAsFixed(2)}');
-  print('リターン           : ${((finalValue / 1000.0 - 1) * 100).toStringAsFixed(2)}%');
+  print(
+    'リターン           : ${((finalValue / 1000.0 - 1) * 100).toStringAsFixed(2)}%',
+  );
 }
 
 KlineSeries loadCsv(String path) {

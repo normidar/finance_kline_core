@@ -1,3 +1,7 @@
+## 0.1.0
+
+- New Code style.
+
 ## 0.0.4
 
 - Add `cleanCombo` and `combo` to `PipeWrapper`.

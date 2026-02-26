@@ -1,7 +1,20 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:finance_kline_core/finance_kline_core.dart';
 import 'package:test/test.dart';
+
+// ─── サンプル分析ヘルパー ────────────────────────────────────────────────────
+
+/// 1本あたりの平均値幅率 = mean((high - low) / open * 100) をローソク足全本で計算
+double _avgCandleVolatility(KlineSeries kline) {
+  if (kline.units.isEmpty) return 0;
+  final sum = kline.units.fold<double>(
+    0,
+    (acc, k) => acc + (k.high - k.low) / k.open * 100,
+  );
+  return sum / kline.units.length;
+}
 
 // ─── CSV ローダー ────────────────────────────────────────────────────────────
 
@@ -190,6 +203,138 @@ void main() {
     test('先頭バッチ: 5m シリーズが moveSize * 3 本', () {
       final first = results.first.compactSeriesMap[Interval.$5m]!;
       expect(first.kline.units.length, moveSize * 3);
+    });
+  });
+
+  // ─── サンプル 1: 5m と 15m の変動率の差 ─────────────────────────────────
+  //
+  // 「1本あたり平均値幅率」= mean((high - low) / open * 100)
+  // 5m のほうが 1 本あたりの範囲は小さいため、差は基本的に負になる。
+  // moveInterval=$1h / moveSize=24 で 1 日窓ずつスライドしながら差を計算。
+
+  group('サンプル 1: 5m 変動率 − 15m 変動率の差', () {
+    late List<double> diffs;
+
+    setUpAll(() {
+      diffs = wrapper.analyze<double>(
+        moveInterval: Interval.$1h,
+        moveSize: 24,
+        onAnalyze: (w) {
+          final v5m = _avgCandleVolatility(
+            w.compactSeriesMap[Interval.$5m]!.kline,
+          );
+          final v15m = _avgCandleVolatility(
+            w.compactSeriesMap[Interval.$15m]!.kline,
+          );
+          return v5m - v15m;
+        },
+      );
+    });
+
+    test('結果件数が正しい', () {
+      expect(diffs.length, kline1h.units.length - 24 + 1);
+    });
+
+    test('全値が有限値（NaN / Inf なし）', () {
+      expect(diffs.every((d) => d.isFinite), isTrue);
+    });
+
+    test('5m の 1 本あたり変動率は 15m より小さい（差は負）ケースが大多数', () {
+      // 1本あたりの値幅は時間足が長いほど大きいのが自然
+      final negativeCount = diffs.where((d) => d < 0).length;
+      expect(negativeCount, greaterThan(diffs.length ~/ 2));
+    });
+
+    test('差の絶対値は小さい（%単位で 1 未満が大多数）', () {
+      // 同じ相場を見ているので極端な乖離はない
+      final smallCount = diffs.where((d) => d.abs() < 1.0).length;
+      expect(smallCount, greaterThan(diffs.length ~/ 2));
+    });
+
+    test('差の最大値・最小値を出力（目視確認用）', () {
+      final maxDiff = diffs.reduce(math.max);
+      final minDiff = diffs.reduce(math.min);
+      // ignore: avoid_print
+      print('5m-15m volatility diff  max=$maxDiff  min=$minDiff');
+      expect(maxDiff, isNotNull); // 出力のみ、常に pass
+    });
+  });
+
+  // ─── サンプル 2: 1h MACD クロス検出 ────────────────────────────────────
+  //
+  // moveInterval=$1h / moveSize=48 (2 日窓) で各バッチ末尾 2 本の
+  // ゴールデンクロス / デッドクロスを検出する。
+
+  group('サンプル 2: 1h MACD ゴールデンクロス / デッドクロス検出', () {
+    late List<({bool bullish, bool bearish})> crosses;
+
+    setUpAll(() {
+      crosses = wrapper.analyze(
+        moveInterval: Interval.$1h,
+        moveSize: 48, // 2日分のウォームアップを含む
+        onAnalyze: (w) {
+          final macd = w.compactSeriesMap[Interval.$1h]!.macd;
+          return (bullish: macd.isBullishCross, bearish: macd.isBearishCross);
+        },
+      );
+    });
+
+    test('結果件数が正しい', () {
+      expect(crosses.length, kline1h.units.length - 48 + 1);
+    });
+
+    test('1 ヶ月間に少なくとも 1 回のゴールデンクロスが存在する', () {
+      expect(crosses.any((c) => c.bullish), isTrue);
+    });
+
+    test('1 ヶ月間に少なくとも 1 回のデッドクロスが存在する', () {
+      expect(crosses.any((c) => c.bearish), isTrue);
+    });
+
+    test('同一バッチでゴールデンとデッドが同時に true にならない', () {
+      expect(crosses.every((c) => !(c.bullish && c.bearish)), isTrue);
+    });
+
+    test('クロス回数を出力（目視確認用）', () {
+      final bullCount = crosses.where((c) => c.bullish).length;
+      final bearCount = crosses.where((c) => c.bearish).length;
+      // ignore: avoid_print
+      print('MACD crosses  bullish=$bullCount  bearish=$bearCount');
+      expect(bullCount + bearCount, greaterThan(0));
+    });
+  });
+
+  // ─── サンプル 3: 1h RSI 過熱 / 売られすぎ検出 ─────────────────────────
+  //
+  // RSI(14) > 70 = 買われすぎ、< 30 = 売られすぎ。
+  // moveInterval=$1h / moveSize=24 の各バッチ末尾 RSI 状態を返す。
+
+  group('サンプル 3: 1h RSI 状態ラベル付け', () {
+    late List<RsiState> states;
+
+    setUpAll(() {
+      states = wrapper.analyze<RsiState>(
+        moveInterval: Interval.$1h,
+        moveSize: 24,
+        onAnalyze: (w) =>
+            w.compactSeriesMap[Interval.$1h]!.rsi.stateOf(14),
+      );
+    });
+
+    test('結果件数が正しい', () {
+      expect(states.length, kline1h.units.length - 24 + 1);
+    });
+
+    test('全要素が RsiState のいずれか', () {
+      expect(states.every(RsiState.values.contains), isTrue);
+    });
+
+    test('状態分布を出力（目視確認用）', () {
+      final counts = <RsiState, int>{};
+      for (final s in states) counts[s] = (counts[s] ?? 0) + 1;
+      // ignore: avoid_print
+      print('RSI states: $counts');
+      expect(counts, isNotEmpty);
     });
   });
 

@@ -3,11 +3,15 @@ import 'dart:io';
 
 import 'package:finance_kline_core/finance_kline_core.dart';
 
-void main() {
+void main(List<String> args) {
+  final dir = args.isNotEmpty ? args[0] : 'test/fixtures';
+
+  print('Analyzing: $dir');
+
   final wrapper = MultiIntervalWrapper(
     compactSeriesMap: {
       Interval.$1h: CompactLogic().calculate(
-        klineSeries: loadCsv('test/fixtures/kline_1h.csv'),
+        klineSeries: loadCsv('$dir/kline_1h.csv'),
         priceType: PriceType.close,
         params: CompactParams(
           emaParams: EmaParams(periods: {12, 26}),
@@ -16,7 +20,7 @@ void main() {
         ),
       ),
       Interval.$5m: CompactLogic().calculate(
-        klineSeries: loadCsv('test/fixtures/kline_5m.csv'),
+        klineSeries: loadCsv('$dir/kline_5m.csv'),
         priceType: PriceType.close,
         params: CompactParams(
           emaParams: EmaParams(periods: {12, 26}),
@@ -25,7 +29,7 @@ void main() {
         ),
       ),
       Interval.$15m: CompactLogic().calculate(
-        klineSeries: loadCsv('test/fixtures/kline_15m.csv'),
+        klineSeries: loadCsv('$dir/kline_15m.csv'),
         priceType: PriceType.close,
         params: CompactParams(
           emaParams: EmaParams(periods: {12, 26}),

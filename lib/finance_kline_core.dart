@@ -5,6 +5,7 @@ export 'package:finance_kline_core/src/fkc_engine.dart';
 export 'package:finance_kline_core/src/model/kline.dart';
 export 'package:finance_kline_core/src/model/macd.dart';
 export 'package:finance_kline_core/src/model/rsi.dart';
+export 'package:finance_kline_core/src/multi_interval_wrapper.dart';
 export 'package:finance_kline_core/src/signal/compact/compact_logic.dart';
 export 'package:finance_kline_core/src/signal/compact/compact_params.dart';
 export 'package:finance_kline_core/src/signal/compact/compact_series.dart';

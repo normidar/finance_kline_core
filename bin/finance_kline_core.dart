@@ -97,9 +97,6 @@ Map<String, dynamic> analyzeFunction(MultiIntervalWrapper wrapper) {
   };
 }
 
-// ポジション方向
-enum _Side { none, long, short }
-
 void analyzeProfit(List<Map<String, dynamic>> results) {
   const double stopLossRate = 0.015; // 1.5% 損切りライン
 
@@ -263,3 +260,6 @@ KlineSeries loadCsv(String path) {
   }
   return KlineSeries(units: units);
 }
+
+// ポジション方向
+enum _Side { none, long, short }

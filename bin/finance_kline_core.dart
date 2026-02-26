@@ -110,7 +110,21 @@ void analyzeProfit(List<Map<String, dynamic>> results) {
   double maxProfit = double.negativeInfinity;
   double maxLoss = double.infinity;
 
-  void closeTrade(double price, String reason) {
+  String fmtTime(dynamic ts) {
+    if (ts == null) return '??-??-?? ??:??';
+    final dt = DateTime.fromMillisecondsSinceEpoch(
+      (ts as num).toInt(),
+      isUtc: true,
+    ).toLocal();
+    final y = dt.year;
+    final mo = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    final h = dt.hour.toString().padLeft(2, '0');
+    final mi = dt.minute.toString().padLeft(2, '0');
+    return '$y-$mo-$d $h:$mi';
+  }
+
+  void closeTrade(double price, String reason, dynamic ts) {
     double pnlPct;
     if (side == _Side.long) {
       cash = qty * price;
@@ -131,31 +145,32 @@ void analyzeProfit(List<Map<String, dynamic>> results) {
       if (pnlPct < maxLoss) maxLoss = pnlPct;
     }
     print(
-      '$reason @ ${price.toStringAsFixed(2)}  cash=\$${cash.toStringAsFixed(2)}  pnl=${pnlPct.toStringAsFixed(2)}%',
+      '${fmtTime(ts)}  $reason @ ${price.toStringAsFixed(2)}  cash=\$${cash.toStringAsFixed(2)}  pnl=${pnlPct.toStringAsFixed(2)}%',
     );
   }
 
   for (final r in results) {
     final price = (r['price'] as num?)?.toDouble();
     if (price == null || price <= 0) continue;
+    final ts = r['timestamp'];
 
     // 損切り判定
     if (side == _Side.long && price <= entryPrice * (1 - stopLossRate)) {
       stopLossCount++;
-      closeTrade(price, 'STOP_L');
+      closeTrade(price, 'STOP_L', ts);
     } else if (side == _Side.short &&
         price >= entryPrice * (1 + stopLossRate)) {
       stopLossCount++;
-      closeTrade(price, 'STOP_S');
+      closeTrade(price, 'STOP_S', ts);
     }
 
     // ロング決済
     if (side == _Side.long && r['long_exit'] == true) {
-      closeTrade(price, 'SELL  ');
+      closeTrade(price, 'SELL  ', ts);
     }
     // ショート決済
     if (side == _Side.short && r['short_exit'] == true) {
-      closeTrade(price, 'COVER ');
+      closeTrade(price, 'COVER ', ts);
     }
 
     // ロングエントリー
@@ -164,18 +179,19 @@ void analyzeProfit(List<Map<String, dynamic>> results) {
       entryPrice = price;
       qty = cash / price;
       cash = 0.0;
-      print('BUY   @ ${price.toStringAsFixed(2)}');
+      print('${fmtTime(ts)}  BUY   @ ${price.toStringAsFixed(2)}');
     }
     // ショートエントリー
     else if (side == _Side.none && r['short_entry'] == true) {
       side = _Side.short;
       entryPrice = price;
       // ショートはcashをそのまま担保に使う
-      print('SHORT @ ${price.toStringAsFixed(2)}');
+      print('${fmtTime(ts)}  SHORT @ ${price.toStringAsFixed(2)}');
     }
   }
 
   // 未決済ポジション
+  final lastTs = results.last['timestamp'];
   final lastPrice = (results.last['price'] as num?)?.toDouble() ?? 0.0;
   if (side != _Side.none) {
     double pnlPct;
@@ -195,7 +211,7 @@ void analyzeProfit(List<Map<String, dynamic>> results) {
       if (pnlPct < maxLoss) maxLoss = pnlPct;
     }
     print(
-      'OPEN(${side.name}) @ $lastPrice (unrealized)  pnl=${pnlPct.toStringAsFixed(2)}%',
+      '${fmtTime(lastTs)}  OPEN(${side.name}) @ $lastPrice (unrealized)  pnl=${pnlPct.toStringAsFixed(2)}%',
     );
     cash = finalVal;
   }

@@ -37,7 +37,7 @@ void main() {
   );
 
   final results = wrapper.analyze<Map<String, dynamic>>(
-    moveInterval: Interval.$5m,
+    moveInterval: Interval.$15m,
     moveSize: 200,
     onAnalyze: analyzeFunction,
   );
@@ -50,24 +50,59 @@ void main() {
 }
 
 Map<String, dynamic> analyzeFunction(MultiIntervalWrapper wrapper) {
-  const interval = Interval.$1h;
+  const interval15m = Interval.$15m;
+  const interval1h = Interval.$1h;
+
+  final s15m = wrapper.compactSeriesMap[interval15m];
+  final s1h = wrapper.compactSeriesMap[interval1h];
+
+  // 1h: MACD トレンド方向
+  final h1MacdBullish = s1h?.macd.last?.isBullish ?? false;
+  final h1MacdBearish = s1h?.macd.last?.isBearish ?? false;
+
+  // 15m: RSI14
+  final rsiList = s15m?.rsi[14];
+  final rsi14 =
+      (rsiList != null && rsiList.isNotEmpty) ? rsiList.last?.value : null;
+
+  // ロング: 1h強気 + 15m MACDクロス + RSI < 65
+  final longEntry = s15m?.macd.isBullishCross == true &&
+      h1MacdBullish &&
+      (rsi14 == null || rsi14 < 65);
+
+  // ロング出口: 15m MACDデッドクロス
+  final longExit = s15m?.macd.isBearishCross == true;
+
+  // ショート: 1h弱気 + 15m MACDデッドクロス + RSI > 35
+  final shortEntry = s15m?.macd.isBearishCross == true &&
+      h1MacdBearish &&
+      (rsi14 == null || rsi14 > 35);
+
+  // ショート出口: 15m MACDゴールデンクロス
+  final shortExit = s15m?.macd.isBullishCross == true;
+
   return {
-    'macd_bullish_cross':
-        wrapper.compactSeriesMap[interval]?.macd.isBullishCross,
-    'macd_bearish_cross':
-        wrapper.compactSeriesMap[interval]?.macd.isBearishCross,
-    'timestamp':
-        wrapper.compactSeriesMap[interval]?.kline.units.last.closeTimestamp,
-    'price': wrapper.compactSeriesMap[interval]?.kline.units.last.close,
+    'long_entry': longEntry,
+    'long_exit': longExit,
+    'short_entry': shortEntry,
+    'short_exit': shortExit,
+    'timestamp': s15m?.kline.units.last.closeTimestamp,
+    'price': s15m?.kline.units.last.close,
+    'rsi14': rsi14,
+    'h1_macd_bullish': h1MacdBullish,
   };
 }
 
+// ポジション方向
+enum _Side { none, long, short }
+
 void analyzeProfit(List<Map<String, dynamic>> results) {
-  const double stopLossRate = 0.08; // 8% 損切りライン
+  const double stopLossRate = 0.015; // 1.5% 損切りライン
 
   double cash = 1000;
-  double holdings = 0;
-  double buyPrice = 0;
+  double qty = 0; // 保有量 (ロングなら正, ショートなら負)
+  double entryPrice = 0;
+  _Side side = _Side.none;
 
   int wins = 0;
   int losses = 0;
@@ -76,9 +111,18 @@ void analyzeProfit(List<Map<String, dynamic>> results) {
   double maxLoss = double.infinity;
 
   void closeTrade(double price, String reason) {
-    cash = holdings * price;
-    holdings = 0.0;
-    final pnlPct = (price - buyPrice) / buyPrice * 100;
+    double pnlPct;
+    if (side == _Side.long) {
+      cash = qty * price;
+      pnlPct = (price - entryPrice) / entryPrice * 100;
+    } else {
+      // ショート: 損益 = (entryPrice - price) / entryPrice
+      final shortPnl = (entryPrice - price) / entryPrice;
+      cash = cash * (1 + shortPnl);
+      pnlPct = shortPnl * 100;
+    }
+    qty = 0;
+    side = _Side.none;
     if (pnlPct >= 0) {
       wins++;
       if (pnlPct > maxProfit) maxProfit = pnlPct;
@@ -87,7 +131,7 @@ void analyzeProfit(List<Map<String, dynamic>> results) {
       if (pnlPct < maxLoss) maxLoss = pnlPct;
     }
     print(
-      '$reason @ $price  cash=\$${cash.toStringAsFixed(2)}  pnl=${pnlPct.toStringAsFixed(2)}%',
+      '$reason @ ${price.toStringAsFixed(2)}  cash=\$${cash.toStringAsFixed(2)}  pnl=${pnlPct.toStringAsFixed(2)}%',
     );
   }
 
@@ -95,25 +139,54 @@ void analyzeProfit(List<Map<String, dynamic>> results) {
     final price = (r['price'] as num?)?.toDouble();
     if (price == null || price <= 0) continue;
 
-    // 損切り判定 (ポジション保有中のみ)
-    if (holdings > 0 && price <= buyPrice * (1 - stopLossRate)) {
+    // 損切り判定
+    if (side == _Side.long && price <= entryPrice * (1 - stopLossRate)) {
       stopLossCount++;
-      closeTrade(price, 'STOP ');
+      closeTrade(price, 'STOP_L');
+    } else if (side == _Side.short &&
+        price >= entryPrice * (1 + stopLossRate)) {
+      stopLossCount++;
+      closeTrade(price, 'STOP_S');
     }
 
-    if (r['macd_bullish_cross'] == true && cash > 0) {
-      buyPrice = price;
-      holdings = cash / price;
+    // ロング決済
+    if (side == _Side.long && r['long_exit'] == true) {
+      closeTrade(price, 'SELL  ');
+    }
+    // ショート決済
+    if (side == _Side.short && r['short_exit'] == true) {
+      closeTrade(price, 'COVER ');
+    }
+
+    // ロングエントリー
+    if (side == _Side.none && r['long_entry'] == true) {
+      side = _Side.long;
+      entryPrice = price;
+      qty = cash / price;
       cash = 0.0;
-    } else if (r['macd_bearish_cross'] == true && holdings > 0) {
-      closeTrade(price, 'SELL ');
+      print('BUY   @ ${price.toStringAsFixed(2)}');
+    }
+    // ショートエントリー
+    else if (side == _Side.none && r['short_entry'] == true) {
+      side = _Side.short;
+      entryPrice = price;
+      // ショートはcashをそのまま担保に使う
+      print('SHORT @ ${price.toStringAsFixed(2)}');
     }
   }
 
-  // 未決済ポジションがあれば最終価格で評価
+  // 未決済ポジション
   final lastPrice = (results.last['price'] as num?)?.toDouble() ?? 0.0;
-  if (holdings > 0) {
-    final pnlPct = (lastPrice - buyPrice) / buyPrice * 100;
+  if (side != _Side.none) {
+    double pnlPct;
+    double finalVal;
+    if (side == _Side.long) {
+      pnlPct = (lastPrice - entryPrice) / entryPrice * 100;
+      finalVal = qty * lastPrice;
+    } else {
+      pnlPct = (entryPrice - lastPrice) / entryPrice * 100;
+      finalVal = cash * (1 + (entryPrice - lastPrice) / entryPrice);
+    }
     if (pnlPct >= 0) {
       wins++;
       if (pnlPct > maxProfit) maxProfit = pnlPct;
@@ -121,30 +194,33 @@ void analyzeProfit(List<Map<String, dynamic>> results) {
       losses++;
       if (pnlPct < maxLoss) maxLoss = pnlPct;
     }
-    print('OPEN @ $lastPrice (未決済評価)  pnl=${pnlPct.toStringAsFixed(2)}%');
+    print(
+      'OPEN(${side.name}) @ $lastPrice (unrealized)  pnl=${pnlPct.toStringAsFixed(2)}%',
+    );
+    cash = finalVal;
   }
 
-  final finalValue = cash + holdings * lastPrice;
+  final finalValue = side == _Side.none ? cash : cash;
   final totalTrades = wins + losses;
   final winRate = totalTrades > 0 ? wins / totalTrades * 100 : 0.0;
   final lossRate = totalTrades > 0 ? losses / totalTrades * 100 : 0.0;
 
   print('');
-  print('=== 統計 ===');
-  print('損切りライン       : ${(stopLossRate * 100).toStringAsFixed(0)}%');
-  print('総トレード数       : $totalTrades');
-  print('勝ち               : $wins  (${winRate.toStringAsFixed(1)}%)');
-  print('負け               : $losses  (${lossRate.toStringAsFixed(1)}%)');
-  print('  うち損切り       : $stopLossCount');
+  print('=== Statistics ===');
+  print('Stop-loss rate     : ${(stopLossRate * 100).toStringAsFixed(1)}%');
+  print('Total trades       : $totalTrades');
+  print('Wins               : $wins  (${winRate.toStringAsFixed(1)}%)');
+  print('Losses             : $losses  (${lossRate.toStringAsFixed(1)}%)');
+  print('  Stop-losses      : $stopLossCount');
   print(
-    '最大利益           : ${maxProfit == double.negativeInfinity ? "N/A" : "${maxProfit.toStringAsFixed(2)}%"}',
+    'Max profit         : ${maxProfit == double.negativeInfinity ? "N/A" : "${maxProfit.toStringAsFixed(2)}%"}',
   );
   print(
-    '最大損失           : ${maxLoss == double.infinity ? "N/A" : "${maxLoss.toStringAsFixed(2)}%"}',
+    'Max loss           : ${maxLoss == double.infinity ? "N/A" : "${maxLoss.toStringAsFixed(2)}%"}',
   );
-  print('最終資産           : \$${finalValue.toStringAsFixed(2)}');
+  print('Final equity       : \$${finalValue.toStringAsFixed(2)}');
   print(
-    'リターン           : ${((finalValue / 1000.0 - 1) * 100).toStringAsFixed(2)}%',
+    'Return             : ${((finalValue / 1000.0 - 1) * 100).toStringAsFixed(2)}%',
   );
 }
 

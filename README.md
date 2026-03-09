@@ -3,370 +3,289 @@
 [![GitHub](https://img.shields.io/github/license/normidar/finance_kline_core.svg)](https://github.com/normidar/finance_kline_core/blob/main/LICENSE)
 [![pub package](https://img.shields.io/pub/v/finance_kline_core.svg)](https://pub.dartlang.org/packages/finance_kline_core)
 [![GitHub Stars](https://img.shields.io/github/stars/normidar/finance_kline_core.svg)](https://github.com/normidar/finance_kline_core/stargazers)
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/normidar2.svg?style=social&label=Follow%20%40normidar2)](https://twitter.com/normidar2)
-[![Github-sponsors](https://img.shields.io/badge/sponsor-30363D?logo=GitHub-Sponsors&logoColor=#EA4AAA)](https://github.com/sponsors/normidar)
 
-A comprehensive Dart package for financial candlestick (K-line) data analysis with technical indicators, statistical analysis, and precision decimal calculations.
+A Dart package for financial candlestick (K-line) data analysis.
+Provides technical indicators, K-line merging, signal detection, and a multi-timeframe engine.
 
 📖 **[日本語ドキュメント (Japanese Documentation)](README_ja.md)**
 
 ---
 
-### Features
+## Features
 
-- **Technical Indicators**
+- **Technical Indicators** — EMA, SMA, MACD, RSI, Linear Regression, Pearson Correlation
+- **K-line Merging** — Convert lower timeframes to higher (e.g. 1m → 5m) with flexible alignment/mode options
+- **Signal Architecture** — Pluggable `SignalLogic` / `SignalParams` / `SignalSeries` for composable strategies
+- **Multi-Timeframe Engine** — `FKCEngine` manages multiple timeframes and iterates bar-by-bar
+- **Pipeline Utilities** — `PipeList` for context-aware iteration over bar series
 
-  - EMA (Exponential Moving Average) - Fast-responsive trend following
-  - SMA (Simple Moving Average) - Classic trend analysis
-  - MACD (Moving Average Convergence Divergence) - Momentum and trend strength
+---
 
-- **Statistical Analysis**
-
-  - Linear Regression with R² (Coefficient of Determination)
-  - Price Prediction using linear fitting
-  - Trend analysis with confidence metrics
-
-- **K-line Operations**
-
-  - Flexible K-line merging with alignment options (left/right)
-  - Multiple merge modes (strict/partial)
-  - Conversion between Kline and OHLCV formats
-
-- **Precision Calculations**
-  - Uses `Decimal` type for accurate financial calculations
-  - Avoids floating-point precision errors
-  - Configurable decimal scale
-
-### Installation
-
-Add this to your package's `pubspec.yaml` file:
+## Installation
 
 ```yaml
 dependencies:
-  finance_kline_core: ^0.0.1
+  finance_kline_core: ^0.0.4
 ```
 
-Then run:
+---
 
-```bash
-dart pub get
-```
+## Usage
 
-### Usage Examples
-
-#### Creating K-lines
+### Creating OHLCV Data
 
 ```dart
 import 'package:finance_kline_core/finance_kline_core.dart';
 
-// Create from double values
-final kline = Kline.fromDouble(
+final ohlcv = Ohlcv(
   open: 100.0,
   high: 105.0,
-  low: 99.0,
+  low:  99.0,
   close: 103.0,
-  scale: 4,  // Decimal precision
+  volume: 1000000.0,
+  openTimestamp:  1700000000000,
+  closeTimestamp: 1700000059999,
 );
 
-// Create from Decimal values
-final klineDecimal = Kline(
-  open: Decimal.parse('100.0000'),
-  high: Decimal.parse('105.0000'),
-  low: Decimal.parse('99.0000'),
-  close: Decimal.parse('103.0000'),
-);
-
-// Create OHLCV with volume
-final ohlcv = Ohlcv(
-  open: Decimal.parse('100.0'),
-  high: Decimal.parse('105.0'),
-  low: Decimal.parse('99.0'),
-  close: Decimal.parse('103.0'),
-  volume: Decimal.parse('1000000.0'),
-);
+final series = OhlcvSeries(data: [ohlcv, /* ... */]);
 ```
 
-#### Calculating Technical Indicators
+---
+
+### Technical Indicators
+
+All indicators are available as extension methods on `List<double>` (`DecList`),
+or via cached methods on `OhlcvSeries`.
 
 ```dart
-// Create a series of K-lines
-final klineSeries = <Kline>[
-  Kline.fromDouble(open: 100, high: 105, low: 99, close: 103),
-  Kline.fromDouble(open: 103, high: 108, low: 102, close: 106),
-  Kline.fromDouble(open: 106, high: 110, low: 105, close: 108),
-  // ... more klines
-];
+// ── via OhlcvSeries ──────────────────────────────────────────────
+final ema12  = series.ema(period: 12);
+final ema26  = series.ema(period: 26, priceType: PriceType.high);
+final macd   = series.macd(fastPeriod: 12, slowPeriod: 26, signalPeriod: 9);
+final rsi    = series.rsi(period: 14);
 
-// Calculate EMA (Exponential Moving Average)
-final ema12 = klineSeries.ema(period: 12);
-final ema26 = klineSeries.ema(period: 26);
+// ── via DecList (List<double>) ───────────────────────────────────
+final closes = series.closes;
+final sma20  = closes.sma(20);
+final fit    = closes.linearFit();
 
-// Calculate on different price types
-final emaHigh = klineSeries.ema(
-  period: 12,
-  priceType: PriceType.high,
-);
-
-// Calculate SMA (Simple Moving Average)
-final closes = klineSeries.closes;
-final sma20 = closes.sma(20);
-
-// Calculate MACD
-final macd = klineSeries.macd(
-  fastPeriod: 12,
-  slowPeriod: 26,
-  signalPeriod: 9,
-);
-
-// Check MACD signals
-for (final m in macd) {
-  if (m != null) {
-    if (m.isBullish) {
-      print('Buy signal: MACD line above signal line');
-    } else if (m.isBearish) {
-      print('Sell signal: MACD line below signal line');
-    }
-  }
-}
+print('slope:     ${fit.slope}');
+print('intercept: ${fit.intercept}');
+print('R²:        ${fit.rSquared}');
+print('next pred: ${fit.predict(closes.length.toDouble())}');
 ```
 
-#### Linear Regression and Prediction
+---
+
+### K-line Merging
+
+`OhlcvSeries.merge(n)` combines every `n` bars into one.
 
 ```dart
-// Get closing prices
-final closes = klineSeries.closes;
+// 1-minute → 5-minute (left-aligned, strict)
+final fiveMin = oneMin.merge(5);
 
-// Perform linear regression
-final fit = closes.linearFit();
-print('Slope: ${fit.slope}');
-print('Intercept: ${fit.intercept}');
-print('R²: ${fit.rSquared}');  // Closer to 1.0 means better fit
-
-// Predict future values
-final nextValue = fit.predict(closes.length.toDouble() + 1);
-print('Predicted next close: $nextValue');
-
-// Predict the next K-line
-final nextKline = klineSeries.predictNext(scale: 4);
-print('Predicted next K-line:');
-print('  Open: ${nextKline.open}');
-print('  High: ${nextKline.high}');
-print('  Low: ${nextKline.low}');
-print('  Close: ${nextKline.close}');
-```
-
-#### Merging K-lines
-
-```dart
-// Merge K-lines with different strategies
-
-// Left-aligned merge (from oldest data)
-// Drops incomplete chunks at the end
-final mergedLeft = klineSeries.merge(
-  count: 4,
-  alignment: MergeAlignment.left,
-  mode: MergeMode.strict,
-);
-
-// Right-aligned merge (from newest data)
-// Drops incomplete chunks at the beginning
-final mergedRight = klineSeries.merge(
-  count: 4,
+// Right-aligned: anchor from newest bar, keep partial (incomplete) chunk
+final rightPartial = series.merge(3,
   alignment: MergeAlignment.right,
-  mode: MergeMode.strict,
-);
-
-// Partial mode: includes incomplete chunks
-final mergedPartial = klineSeries.merge(
-  count: 4,
-  alignment: MergeAlignment.left,
   mode: MergeMode.partial,
 );
-
-// Merged K-line combines:
-// - open: first K-line's open
-// - high: highest of all highs
-// - low: lowest of all lows
-// - close: last K-line's close
 ```
 
-#### Working with OHLCV Data
+**Merge rules:** `open` = first, `high` = max, `low` = min, `close` = last, `volume` = sum.
+
+| | `strict` | `partial` |
+|---|---|---|
+| `left`  | Drop trailing incomplete chunk | Keep trailing incomplete chunk |
+| `right` | Drop leading incomplete chunk  | Keep leading incomplete chunk  |
+
+---
+
+### Signal Logic
+
+Use `SignalLogic` + `SignalParams` to compute indicator signals.
 
 ```dart
-final ohlcvSeries = <Ohlcv>[
-  Ohlcv(
-    open: Decimal.parse('100'),
-    high: Decimal.parse('105'),
-    low: Decimal.parse('99'),
-    close: Decimal.parse('103'),
-    volume: Decimal.parse('1000000'),
-  ),
-  // ... more OHLCV data
-];
+// EMA cross detection
+final emaResult = EmaLogic().calculate(
+  params: EmaParams(periods: {12, 26}),
+  data: series.closes,
+) as EmaSeries;
 
-// Extract specific price series
-final closes = ohlcvSeries.closes;
-final highs = ohlcvSeries.highs;
-final volumes = ohlcvSeries.volumes;
-
-// Convert to K-line series (without volume)
-final klines = ohlcvSeries.toKlineSeries();
-
-// Calculate indicators on OHLCV
-final ema = ohlcvSeries.closes.ema(12);
-```
-
-### API Reference
-
-#### `Kline`
-
-Core candlestick data structure with OHLC values.
-
-**Properties:**
-
-- `open: Decimal` - Opening price
-- `high: Decimal` - Highest price
-- `low: Decimal` - Lowest price
-- `close: Decimal` - Closing price
-
-**Constructors:**
-
-- `Kline({required Decimal open, high, low, close})`
-- `Kline.fromDouble({required double open, high, low, close, int scale = 4})`
-- `Kline.fromOhlcv(Ohlcv ohlcv)`
-
-**Methods:**
-
-- `bool check()` - Validates K-line data consistency
-- `Decimal price(PriceType type)` - Gets price by type
-- `Ohlcv toOhlcv({required Decimal volume})` - Converts to OHLCV
-
-#### `KlineSeries` (List<Kline>)
-
-Extension methods for K-line series operations.
-
-**Properties:**
-
-- `closes: DecList` - All closing prices
-- `highs: DecList` - All high prices
-- `lows: DecList` - All low prices
-- `opens: DecList` - All opening prices
-
-**Methods:**
-
-- `ema({required int period, PriceType priceType})` - Calculate EMA
-- `macd({int fastPeriod, slowPeriod, signalPeriod, PriceType priceType})` - Calculate MACD
-- `merge({required int count, MergeAlignment alignment, MergeMode mode})` - Merge K-lines
-- `predictNext({int scale})` - Predict next K-line using linear regression
-- `prices(PriceType type)` - Extract prices by type
-- `toOhlcvSeries({required DecList volume})` - Convert to OHLCV series
-
-#### `Ohlcv`
-
-OHLC data with volume.
-
-**Properties:**
-
-- `open: Decimal` - Opening price
-- `high: Decimal` - Highest price
-- `low: Decimal` - Lowest price
-- `close: Decimal` - Closing price
-- `volume: Decimal` - Trading volume
-
-**Methods:**
-
-- `Decimal price(OhlcvType type)` - Gets price or volume by type
-- `Kline toKline()` - Converts to K-line (drops volume)
-
-#### `Macd`
-
-MACD indicator result.
-
-**Properties:**
-
-- `macdLine: double` - MACD line (fast EMA - slow EMA)
-- `signalLine: double` - Signal line (EMA of MACD line)
-- `histogram: double` - MACD histogram (MACD line - signal line)
-- `isBullish: bool` - True if MACD line > signal line (buy signal)
-- `isBearish: bool` - True if MACD line < signal line (sell signal)
-
-#### `DecList` (List<Decimal>)
-
-Extension methods for decimal list operations.
-
-**Methods:**
-
-- `ema(int period)` - Calculate Exponential Moving Average
-- `sma(int period)` - Calculate Simple Moving Average
-- `macd({int fastPeriod, slowPeriod, signalPeriod})` - Calculate MACD
-- `linearFit()` - Perform linear regression, returns `LinearFitResult`
-
-#### `LinearFitResult`
-
-Result of linear regression analysis.
-
-**Properties:**
-
-- `slope: double` - Line slope
-- `intercept: double` - Y-intercept
-- `rSquared: double` - Coefficient of determination (0-1, closer to 1 is better fit)
-
-**Methods:**
-
-- `predict(double x)` - Predict Y value for given X
-
-### Key Concepts
-
-#### Price Types
-
-```dart
-enum PriceType {
-  open,   // Opening price
-  high,   // Highest price
-  low,    // Lowest price
-  close,  // Closing price
+if (emaResult.isBullishCross(fast: 12, slow: 26)) {
+  print('Golden cross → buy signal');
 }
+if (emaResult.isBearishCross(fast: 12, slow: 26)) {
+  print('Dead cross → sell signal');
+}
+
+// RSI overbought / oversold
+final rsiParams = RsiParams(period: 14, overbought: 70, oversold: 30);
+final rsiResult = RsiLogic().calculate(
+  params: rsiParams,
+  data: series.closes,
+) as RsiSeries;
+
+switch (rsiResult.stateOf(rsiParams)) {
+  case RsiState.overbought: print('Overbought');
+  case RsiState.oversold:   print('Oversold');
+  case RsiState.neutral:    print('Neutral');
+}
+
+// MACD cross detection
+final macdResult = MacdLogic().calculate(
+  params: MacdParams(fastPeriod: 12, slowPeriod: 26, signalPeriod: 9),
+  data: series.closes,
+) as MacdSeries;
+
+if (macdResult.isBullishCross) print('MACD golden cross');
+if (macdResult.isBearishCross) print('MACD dead cross');
 ```
 
-#### Merge Alignment
+You can also compute from an `OhlcvSeries` with a chosen price type:
 
 ```dart
-enum MergeAlignment {
-  left,   // Left-aligned (starts from oldest data)
-  right,  // Right-aligned (starts from newest data)
-}
+final result = MacdLogic().calculateWithKline(
+  klineSeries: series,
+  priceType: PriceType.close,
+  params: MacdParams(),
+) as MacdSeries;
 ```
 
-**Example:**
+---
 
-- Data: `[1, 2, 3, 4, 5, 6, 7]`, merge count: 3
-- Left alignment: `[[1,2,3], [4,5,6]]` (drops 7)
-- Right alignment: `[[2,3,4], [5,6,7]]` (drops 1)
+### Multi-Timeframe Engine
 
-#### Merge Mode
+`FKCEngine` iterates bar-by-bar over the base timeframe, calling your function with
+data up to and including each bar.
 
 ```dart
-enum MergeMode {
-  strict,   // Drops incomplete chunks
-  partial,  // Includes incomplete chunks
-}
+final engine = FKCEngine(baseInterval: Interval.$1m);
+engine.addOhlcvSeries(Interval.$1m, oneMinSeries);
+engine.addOhlcvSeries(Interval.$1h, oneHourSeries);
+
+// analyze returns a List<T>, one value per bar from `start` to end
+final signals = engine.analyze<bool>(
+  start: 33,  // MACD warm-up: slowPeriod(26) + signalPeriod(9) - 2
+  func: (wrapper) {
+    // `wrapper.ohlcvSeries` is sliced to the current bar
+    final result = MacdLogic().calculateWithKline(
+      klineSeries: wrapper.ohlcvSeries,
+      priceType: PriceType.close,
+      params: MacdParams(),
+    ) as MacdSeries;
+
+    return result.isBullishCross;
+  },
+);
 ```
 
-**Example:**
+You can also call `analyze` directly on a wrapper:
 
-- Data: `[1, 2, 3, 4, 5]`, merge count: 3, left-aligned
-- Strict mode: `[[1,2,3]]` (drops 4,5)
-- Partial mode: `[[1,2,3], [4,5]]` (includes incomplete chunk)
+```dart
+final signals = engine.select(Interval.$1m)!.analyze(
+  start: 33,
+  func: (wrapper) { /* ... */ },
+);
+```
 
-### License
+#### Multi-Timeframe (MTF) inside analyze
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+`jumpTo` inside an `analyze` loop automatically filters to data up to the
+current bar's timestamp — preventing look-ahead bias.
 
-### Contributing
+```dart
+engine.analyze<String>(
+  start: 26,
+  func: (wrapper) {
+    // 1-hour data sliced to current bar's time
+    final hourly = wrapper.jumpTo(Interval.$1h);
+    final trend = hourly?.ohlcvSeries.closes.sma(20);
+    // ...
+    return 'signal';
+  },
+);
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+---
 
-### Links
+### Pipeline Utilities
+
+`PipeList` lets you access previous/next bars in a context-aware loop:
+
+```dart
+final results = series.closes.pipe((wrapper) {
+  final curr = wrapper.getBody(0);
+  final prev = wrapper.prev;   // previous element (nullable)
+  final next = wrapper.next;   // next element (nullable)
+  return (prev != null && curr > prev) ? 'up' : 'down';
+});
+```
+
+---
+
+## API Reference
+
+### Enums
+
+| Enum | Values |
+|---|---|
+| `Interval` | `$1s` `$1m` `$3m` `$5m` `$15m` `$30m` `$1h` `$2h` `$4h` `$6h` `$8h` `$12h` `$1d` `$2d` `$3d` `$1w` `$1M` |
+| `PriceType` | `open` `high` `low` `close` |
+| `MergeAlignment` | `left` `right` |
+| `MergeMode` | `strict` `partial` |
+
+### `Ohlcv`
+
+Immutable OHLCV bar (`@freezed`). Supports `toJson` / `fromJson`.
+
+| Property | Type | Description |
+|---|---|---|
+| `open` / `high` / `low` / `close` | `double` | OHLC prices |
+| `volume` | `double` | Trading volume |
+| `openTimestamp` / `closeTimestamp` | `int` | Unix ms timestamps |
+
+### `OhlcvSeries`
+
+Wraps `List<Ohlcv>` with cached indicator methods.
+
+| Method | Returns | Description |
+|---|---|---|
+| `ema({period, priceType})` | `List<double?>` | Exponential Moving Average |
+| `macd({fastPeriod, slowPeriod, signalPeriod, priceType})` | `List<Macd?>` | MACD |
+| `rsi({period, priceType})` | `List<Rsi?>` | RSI |
+| `merge(n, {alignment, mode})` | `OhlcvSeries` | Merge n bars into one |
+| `subUpToTimestamp(ts)` | `OhlcvSeries` | Filter to bars ≤ timestamp |
+| `subByTimestamp({start, end})` | `List<Ohlcv>` | Slice by timestamp range |
+
+### `DecList` / `DecListX`
+
+Extension methods on `List<double>`.
+
+| Method | Returns |
+|---|---|
+| `ema(period)` | `List<double?>` |
+| `sma(period)` | `List<double?>` |
+| `macd({fastPeriod, slowPeriod, signalPeriod})` | `List<Macd?>` |
+| `rsi(period)` | `List<Rsi?>` |
+| `linearFit()` | `LinearFitResult` |
+| `correlation(other)` | `double` |
+
+### Signal Classes
+
+| Class | Key API |
+|---|---|
+| `EmaSeries` | `operator[](period)`, `isBullishCross(fast:, slow:)`, `isBearishCross(fast:, slow:)` |
+| `RsiSeries` | `last`, `stateOf(RsiParams)` → `RsiState` |
+| `MacdSeries` | `last`, `isBullishCross`, `isBearishCross` |
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+## Links
 
 - [GitHub Repository](https://github.com/normidar/finance_kline_core)
 - [Pub Package](https://pub.dartlang.org/packages/finance_kline_core)
